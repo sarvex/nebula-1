@@ -17,22 +17,16 @@ class DataSetPrinter:
         self._vid_fn = vid_fn
 
     def sstr(self, b) -> str:
-        if not type(b) == bytes:
-            return b
-        return b.decode(self._decode_type)
+        return b if type(b) != bytes else b.decode(self._decode_type)
 
     def vid(self, v) -> str:
         if type(v) is str:
             return f'"{v}"' if self._vid_fn is None else f"{self._vid_fn(v)}"
         if type(v) is bytes:
-            if self._vid_fn is None:
-                return f'"{self.sstr(v)}"'
-            return f"{self._vid_fn(v)}"
+            return f'"{self.sstr(v)}"' if self._vid_fn is None else f"{self._vid_fn(v)}"
         if type(v) is int:
             return f'{v}'
-        if isinstance(v, Value):
-            return self.vid(self.to_string(v))
-        return str(v)
+        return self.vid(self.to_string(v)) if isinstance(v, Value) else str(v)
 
     def ds_to_string(self, ds: DataSet) -> str:
         col_names = '|' + '|'.join(self.sstr(col)
@@ -43,9 +37,7 @@ class DataSetPrinter:
         return '\n'.join([col_names, data_rows])
 
     def to_string(self, val: Union[Value, Pattern]):
-        if isinstance(val, Pattern):
-            return str(val)
-        return self.value_to_string(val)
+        return str(val) if isinstance(val, Pattern) else self.value_to_string(val)
 
     def value_to_string(self, val: Value) -> str:
         if val.getType() == Value.NVAL:
@@ -79,14 +71,12 @@ class DataSetPrinter:
         if val.getType() == Value.PVAL:
             return self.path_to_string(val.get_pVal())
         if val.getType() == Value.LVAL:
-            return '[' + self.list_to_string(val.get_lVal().values) + ']'
+            return f'[{self.list_to_string(val.get_lVal().values)}]'
         if val.getType() == Value.MVAL:
             return self.map_to_string(val.get_mVal().kvs)
         if val.getType() == Value.UVAL:
             return '{' + self.list_to_string(val.get_uVal().values) + '}'
-        if val.getType() == Value.GVAL:
-            return self.ds_to_string(val.get_gVal())
-        return ""
+        return self.ds_to_string(val.get_gVal()) if val.getType() == Value.GVAL else ""
 
     def list_to_string(self, lst: List[Value], delimiter: str = ",") -> str:
         return delimiter.join(self.to_string(val) for val in lst)
@@ -109,7 +99,7 @@ class DataSetPrinter:
         return '{' + ','.join(sorted(kvs)) + '}'
 
     def edge_to_string(self, e: Edge) -> str:
-        name = "" if e.name is None else ":" + self.sstr(e.name)
+        name = "" if e.name is None else f":{self.sstr(e.name)}"
         arrow = "->" if e.type is None or e.type > 0 else "<-"
         direct = f'{self.vid(e.src)}{arrow}{self.vid(e.dst)}'
         rank = "" if e.ranking is None else f"@{e.ranking}"
@@ -119,7 +109,7 @@ class DataSetPrinter:
         src = self.vertex_to_string(p.src)
         path = []
         for step in p.steps:
-            name = "" if step.name is None else ":" + self.sstr(step.name)
+            name = "" if step.name is None else f":{self.sstr(step.name)}"
             rank = "" if step.ranking is None else f"@{step.ranking}"
             dst = self.vertex_to_string(step.dst)
             props = self.map_to_string(step.props)

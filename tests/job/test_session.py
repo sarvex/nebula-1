@@ -16,67 +16,66 @@ from tests.common.nebula_test_suite import NebulaTestSuite
 
 class TestSession(NebulaTestSuite):
     @classmethod
-    def prepare(self):
-        resp = self.execute(
+    def prepare(cls):
+        resp = cls.execute(
             'CREATE USER IF NOT EXISTS session_user WITH PASSWORD "123456"'
         )
-        self.check_resp_succeeded(resp)
+        cls.check_resp_succeeded(resp)
 
         query = 'GRANT ROLE ADMIN ON nba TO session_user'
-        resp = self.execute(query)
-        self.check_resp_succeeded(resp)
+        resp = cls.execute(query)
+        cls.check_resp_succeeded(resp)
 
-        resp = self.execute(
+        resp = cls.execute(
             'CREATE USER IF NOT EXISTS session_user1 WITH PASSWORD "123456"'
         )
-        self.check_resp_succeeded(resp)
+        cls.check_resp_succeeded(resp)
 
         query = 'GRANT ROLE ADMIN ON nba TO session_user1'
-        resp = self.execute(query)
-        self.check_resp_succeeded(resp)
+        resp = cls.execute(query)
+        cls.check_resp_succeeded(resp)
 
-        resp = self.execute(
+        resp = cls.execute(
             'CREATE USER IF NOT EXISTS session_user2 WITH PASSWORD "123456"'
         )
-        self.check_resp_succeeded(resp)
+        cls.check_resp_succeeded(resp)
 
         query = 'GRANT ROLE ADMIN ON nba TO session_user2'
-        resp = self.execute(query)
-        self.check_resp_succeeded(resp)
+        resp = cls.execute(query)
+        cls.check_resp_succeeded(resp)
 
-        resp = self.execute('SHOW HOSTS GRAPH')
-        self.check_resp_succeeded(resp)
+        resp = cls.execute('SHOW HOSTS GRAPH')
+        cls.check_resp_succeeded(resp)
         assert not resp.is_empty()
         assert resp.row_size() == 2
-        self.addr_host1 = resp.row_values(0)[0].as_string()
-        self.addr_port1 = resp.row_values(0)[1].as_int()
-        self.addr_host2 = resp.row_values(1)[0].as_string()
-        self.addr_port2 = resp.row_values(1)[1].as_int()
+        cls.addr_host1 = resp.row_values(0)[0].as_string()
+        cls.addr_port1 = resp.row_values(0)[1].as_int()
+        cls.addr_host2 = resp.row_values(1)[0].as_string()
+        cls.addr_port2 = resp.row_values(1)[1].as_int()
 
-        resp = self.execute('UPDATE CONFIGS graph:session_reclaim_interval_secs = 1')
-        self.check_resp_succeeded(resp)
+        resp = cls.execute('UPDATE CONFIGS graph:session_reclaim_interval_secs = 1')
+        cls.check_resp_succeeded(resp)
         time.sleep(3)
 
     @classmethod
-    def cleanup(self):
-        resp = self.execute('UPDATE CONFIGS graph:session_reclaim_interval_secs = 2')
-        self.check_resp_succeeded(resp)
+    def cleanup(cls):
+        resp = cls.execute('UPDATE CONFIGS graph:session_reclaim_interval_secs = 2')
+        cls.check_resp_succeeded(resp)
         time.sleep(3)
 
-        session = self.client_pool.get_session('root', 'nebula')
+        session = cls.client_pool.get_session('root', 'nebula')
         resp = session.execute('DROP USER session_user')
-        self.check_resp_succeeded(resp)
+        cls.check_resp_succeeded(resp)
         resp = session.execute('DROP USER session_user1')
-        self.check_resp_succeeded(resp)
+        cls.check_resp_succeeded(resp)
         resp = session.execute('DROP USER session_user2')
-        self.check_resp_succeeded(resp)
+        cls.check_resp_succeeded(resp)
 
     def test_sessions(self):
         # 1: test add session with right username
         try:
             user_session = self.client_pool.get_session('session_user', '123456')
             assert user_session is not None
-            assert True
         except Exception as e:
             assert False, e
 
@@ -85,8 +84,7 @@ class TestSession(NebulaTestSuite):
             self.client_pool.get_session('session_not_exist', '123456')
             assert False
         except Exception as e:
-            assert True
-
+            pass
         # 3: test show sessions
         resp = self.execute('SHOW SESSIONS')
         self.check_resp_succeeded(resp)
@@ -119,7 +117,7 @@ class TestSession(NebulaTestSuite):
 
         # wait for session sync.
         time.sleep(3)
-        resp = self.execute('SHOW SESSION {}'.format(session_id))
+        resp = self.execute(f'SHOW SESSION {session_id}')
         self.check_resp_succeeded(resp)
         expect_col_names = [
             'SessionId',
@@ -148,11 +146,11 @@ class TestSession(NebulaTestSuite):
         self.check_resp_succeeded(resp)
         time.sleep(3)
         # to wait for session expires
-        for i in range(3):
+        for _ in range(3):
             resp = self.execute('SHOW SPACES;')
             self.check_resp_succeeded(resp)
             time.sleep(3)
-        resp = self.execute('SHOW SESSION {}'.format(session_id))
+        resp = self.execute(f'SHOW SESSION {session_id}')
         self.check_resp_failed(resp, ttypes.ErrorCode.E_EXECUTION_ERROR)
         resp = self.execute('UPDATE CONFIGS graph:session_idle_timeout_secs = 28800')
         self.check_resp_succeeded(resp)
@@ -226,7 +224,7 @@ class TestSession(NebulaTestSuite):
         sessions = len(resp.rows())
 
         resp = self.execute(
-            'UPDATE CONFIGS graph:max_allowed_connections = {}'.format(sessions)
+            f'UPDATE CONFIGS graph:max_allowed_connections = {sessions}'
         )
         self.check_resp_succeeded(resp)
         time.sleep(3)
@@ -236,11 +234,10 @@ class TestSession(NebulaTestSuite):
             self.client_pool.get_session(self.user, self.password)
             assert False
         except Exception as e:
-            assert True
             assert e.message == "Auth failed: b'Too many connections in the cluster'"
 
         resp = self.execute(
-            'UPDATE CONFIGS graph:max_allowed_connections = {}'.format(sys.maxsize)
+            f'UPDATE CONFIGS graph:max_allowed_connections = {sys.maxsize}'
         )
         self.check_resp_succeeded(resp)
         time.sleep(3)
@@ -264,19 +261,14 @@ class TestSession(NebulaTestSuite):
         self.check_resp_succeeded(resp)
         sessions = len(resp.rows())
 
-        i = 0
         session_user1_count = 0
-        while i < sessions:
+        for i in range(sessions):
             row = resp.rows()[i]
             if row.values[1].get_sVal() == b'session_user1':
                 session_user1_count += 1
-            i += 1
-
         session_limit = max(3, sessions)
         resp = self.execute(
-            'UPDATE CONFIGS graph:max_sessions_per_ip_per_user = {}'.format(
-                session_limit
-            )
+            f'UPDATE CONFIGS graph:max_sessions_per_ip_per_user = {session_limit}'
         )
         self.check_resp_succeeded(resp)
         time.sleep(3)
@@ -290,13 +282,11 @@ class TestSession(NebulaTestSuite):
             self.client_pool.get_session("session_user1", "123456")
             assert False
         except Exception as e:
-            assert True
-
+            pass
         # get new session success from session_user2
         try:
             self.client_pool.get_session("session_user2", "123456")
             self.check_resp_succeeded(resp)
-            assert True
         except Exception as e:
             assert False, e.message
 
@@ -426,10 +416,7 @@ class TestSession(NebulaTestSuite):
             user1_session_num = len(ResultSet(resp, 0).rows())
 
             # kill the session created in host2 from host1
-            resp = conn1.execute(
-                session_id1,
-                'KILL SESSION {}'.format(session_id2),
-            )
+            resp = conn1.execute(session_id1, f'KILL SESSION {session_id2}')
             self.check_resp_succeeded(ResultSet(resp, 0))
             assert ResultSet(resp, 0).rows()[0].values[0].get_iVal() == 1
 

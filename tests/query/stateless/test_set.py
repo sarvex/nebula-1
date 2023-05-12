@@ -8,8 +8,8 @@ from tests.common.nebula_test_suite import NebulaTestSuite
 
 class TestSetQuery(NebulaTestSuite):
     @classmethod
-    def prepare(self):
-        self.use_student_space()
+    def prepare(cls):
+        cls.use_student_space()
 
     def test_union(self):
         # test UNION with distinct

@@ -10,15 +10,16 @@ from tests.common.nebula_test_suite import NebulaTestSuite
 
 class TestBigInt(NebulaTestSuite):
     @classmethod
-    def prepare(self):
-        resp = self.execute(
-            'CREATE SPACE IF NOT EXISTS BigInt2031(partition_num={partition_num}, replica_factor={replica_factor})'
-            .format(partition_num=self.partition_num,
-                    replica_factor=self.replica_factor))
-        self.check_resp_succeeded(resp)
-        time.sleep(self.delay)
-        resp = self.execute('USE BigInt2031')
-        self.check_resp_succeeded(resp)
+    def prepare(cls):
+        resp = cls.execute(
+            'CREATE SPACE IF NOT EXISTS BigInt2031(partition_num={partition_num}, replica_factor={replica_factor})'.format(
+                partition_num=cls.partition_num, replica_factor=cls.replica_factor
+            )
+        )
+        cls.check_resp_succeeded(resp)
+        time.sleep(cls.delay)
+        resp = cls.execute('USE BigInt2031')
+        cls.check_resp_succeeded(resp)
 
     def test_issue2031(self):
         time.sleep(self.delay)
@@ -39,6 +40,6 @@ class TestBigInt(NebulaTestSuite):
         self.check_resp_failed(resp)
 
     @classmethod
-    def cleanup(self):
-        resp = self.execute('drop space BigInt2031')
-        self.check_resp_succeeded(resp)
+    def cleanup(cls):
+        resp = cls.execute('drop space BigInt2031')
+        cls.check_resp_succeeded(resp)

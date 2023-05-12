@@ -13,11 +13,11 @@ from tests.common.nebula_test_suite import NebulaTestSuite
 class TestCharset(NebulaTestSuite):
 
     @classmethod
-    def prepare(self):
+    def prepare(cls):
         pass
 
     @classmethod
-    def cleanup(self):
+    def cleanup(cls):
         pass
 
     def test_show_charset(self):

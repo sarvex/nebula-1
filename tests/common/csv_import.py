@@ -118,9 +118,7 @@ class CSVImporter:
         is_str = (vid.id_type == 'string')
         if vid.function is None:
             return f'"{col}"' if is_str else f'{col}'
-        if is_str:
-            return f'{vid.function}("{col}")'
-        return f'{vid.function}({col})'
+        return f'{vid.function}("{col}")' if is_str else f'{vid.function}({col})'
 
     def parse_header(self, row):
         """
@@ -157,11 +155,11 @@ class CSVImporter:
             m = re.search(r'(\w+)\.(\w+):(\w+)', col)
             if not m:
                 raise ValueError(f'Invalid csv header format {col}')
-            g1 = m.group(1)
+            g1 = m[1]
             if not name:
                 name = g1
             assert name == g1, f'Different edge type {g1}'
-            props.append(Prop(i, m.group(2), m.group(3)))
+            props.append(Prop(i, m[2], m[3]))
 
         self._type.name = name
         self._type.props = props
@@ -181,11 +179,11 @@ class CSVImporter:
             m = re.search(r'(\w+)\.(\w+):(\w+)', col)
             if not m:
                 raise ValueError(f'Invalid csv header format {col}')
-            g1 = m.group(1)
+            g1 = m[1]
             if not tag.name:
                 tag.name = g1
             assert tag.name == g1, f'Different tag name {g1}'
-            props.append(Prop(i, m.group(2), m.group(3)))
+            props.append(Prop(i, m[2], m[3]))
 
         tag.props = props
         self._type.tags = [tag]
@@ -195,11 +193,8 @@ class CSVImporter:
         self._create_stmt = f"CREATE TAG IF NOT EXISTS `{tag.name}`({pdecl});"
 
     def _search_vid(self, i: int, prefix: str, value: str):
-        m = re.search(r":{}\((int|string)\)".format(prefix), value)
-        if m:
-            return True, VID(i, m.group(1))
-        m = re.search(r":{}\((int|string),\s*(hash|uuid)\)".format(prefix),
-                      value)
-        if m:
-            return True, VID(i, m.group(1), m.group(2))
+        if m := re.search(f":{prefix}\((int|string)\)", value):
+            return True, VID(i, m[1])
+        if m := re.search(f":{prefix}\((int|string),\s*(hash|uuid)\)", value):
+            return True, VID(i, m[1], m[2])
         return False, None

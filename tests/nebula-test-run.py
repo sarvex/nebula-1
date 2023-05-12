@@ -114,9 +114,9 @@ def opt_is(val, expect):
 
 def start_nebula(nb, configs):
     if configs.address is not None and configs.address != "":
-        print('test remote NebulaGraph, address is {}'.format(configs.address))
+        print(f'test remote NebulaGraph, address is {configs.address}')
         if len(configs.address.split(':')) != 2:
-            raise Exception('Invalid address, address is {}'.format(configs.address))
+            raise Exception(f'Invalid address, address is {configs.address}')
         address, port = configs.address.split(':')
         ports = [int(port)]
     else:
@@ -161,9 +161,9 @@ def start_nebula(nb, configs):
 
 def start_standalone(nb, configs):
     if configs.address is not None and configs.address != "":
-        print('test remote NebulaGraph, address is {}'.format(configs.address))
+        print(f'test remote NebulaGraph, address is {configs.address}')
         if len(configs.address.split(':')) != 2:
-            raise Exception('Invalid address, address is {}'.format(configs.address))
+            raise Exception(f'Invalid address, address is {configs.address}')
         address, port = configs.address.split(':')
         ports = [int(port)]
     else:

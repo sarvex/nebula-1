@@ -36,10 +36,7 @@ def parsed_as_expected(string_table, _type):
         actual = 'EMPTY'
     elif type == 1:
         null = val.get_nVal()
-        if null == 0:
-            actual = 'NULL'
-        else:
-            actual = NullType._VALUES_TO_NAMES[val.get_nVal()]
+        actual = 'NULL' if null == 0 else NullType._VALUES_TO_NAMES[val.get_nVal()]
     else:
         actual = Value.thrift_spec[val.getType()][2]
     assert actual == _type, f"expected: {_type}, actual: {actual}"

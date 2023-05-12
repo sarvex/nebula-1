@@ -33,9 +33,9 @@ class TestLookupBench(NebulaTestSuite):
         insert_edges(self, "benchlookupspace", 50, 20000)
 
     @classmethod
-    def cleanup(self):
-        resp = self.execute('drop space benchlookupspace')
-        self.check_resp_succeeded(resp)
+    def cleanup(cls):
+        resp = cls.execute('drop space benchlookupspace')
+        cls.check_resp_succeeded(resp)
 
     def lookup(self):
         resp = self.execute('USE benchlookupspace')

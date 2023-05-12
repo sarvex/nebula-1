@@ -12,15 +12,16 @@ from tests.common.nebula_test_suite import T_EMPTY
 
 class TestSchema(NebulaTestSuite):
     @classmethod
-    def prepare(self):
-        resp = self.execute(
-            'CREATE SPACE IF NOT EXISTS schema_space(partition_num={partition_num}, replica_factor={replica_factor}, vid_type=FIXED_STRING(8))'
-            .format(partition_num=self.partition_num,
-                    replica_factor=self.replica_factor))
-        self.check_resp_succeeded(resp)
-        time.sleep(self.delay)
-        resp = self.execute('USE schema_space')
-        self.check_resp_succeeded(resp)
+    def prepare(cls):
+        resp = cls.execute(
+            'CREATE SPACE IF NOT EXISTS schema_space(partition_num={partition_num}, replica_factor={replica_factor}, vid_type=FIXED_STRING(8))'.format(
+                partition_num=cls.partition_num, replica_factor=cls.replica_factor
+            )
+        )
+        cls.check_resp_succeeded(resp)
+        time.sleep(cls.delay)
+        resp = cls.execute('USE schema_space')
+        cls.check_resp_succeeded(resp)
 
     def test_create_tag_succeed(self):
         # create tag without prop
@@ -346,6 +347,6 @@ class TestSchema(NebulaTestSuite):
         self.check_resp_succeeded(resp)
 
     @classmethod
-    def cleanup(self):
-        resp = self.execute('drop space schema_space')
-        self.check_resp_succeeded(resp)
+    def cleanup(cls):
+        resp = cls.execute('drop space schema_space')
+        cls.check_resp_succeeded(resp)

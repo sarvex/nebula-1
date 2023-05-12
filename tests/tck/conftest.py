@@ -154,15 +154,14 @@ def value(any):
     elif isinstance(any, dict):
         v.set_mVal(map2NMap(any))
     else:
-        raise TypeError("Do not support convert " + str(type(any)) + " to nebula.Value")
+        raise TypeError(f"Do not support convert {str(type(any))} to nebula.Value")
     return v
 
 
 def list2Nlist(list):
     nlist = NList()
     nlist.values = []
-    for item in list:
-        nlist.values.append(value(item))
+    nlist.values.extend(value(item) for item in list)
     return nlist
 
 
@@ -224,7 +223,7 @@ def new_space(request, options, exec_ctx):
         line[1].strip(): normalize_outline_scenario(request, line[2].strip())
         for line in lines
     }
-    name = "EmptyGraph_" + space_generator()
+    name = f"EmptyGraph_{space_generator()}"
     space_desc = SpaceDesc(
         name=opts.get("name", name),
         partition_num=int(opts.get("partition_num", 1)),
@@ -256,7 +255,7 @@ def add_listeners(request, exec_ctx):
 
 @given(parse("Any graph"))
 def new_space(request, exec_ctx):
-    name = "EmptyGraph_" + space_generator()
+    name = f"EmptyGraph_{space_generator()}"
     space_desc = SpaceDesc(
         name=name,
         partition_num=1,
@@ -274,9 +273,7 @@ def new_space(request, exec_ctx):
 def import_csv_data(request, data, exec_ctx, pytestconfig):
     data_dir = os.path.join(DATA_DIR, normalize_outline_scenario(request, data))
     space_desc = load_csv_data(
-        exec_ctx.get('current_session'),
-        data_dir,
-        "I" + space_generator(),
+        exec_ctx.get('current_session'), data_dir, f"I{space_generator()}"
     )
     assert space_desc is not None
     exec_ctx["space_desc"] = space_desc
@@ -374,7 +371,8 @@ def given_nebulacluster_with_param(
         process.update_param(listener_param)
     work_dir = os.path.join(
         build_dir,
-        "C" + space_generator() + time.strftime('%Y-%m-%dT%H-%M-%S', time.localtime()),
+        f"C{space_generator()}"
+        + time.strftime('%Y-%m-%dT%H-%M-%S', time.localtime()),
     )
     nebula_svc.install(work_dir)
     nebula_svc.start()
@@ -392,7 +390,7 @@ def given_nebulacluster_with_param(
 @when(parse('login "{graph}" with "{user}" and "{password}"'))
 def when_login_graphd(graph, user, password, class_fixture_variables, pytestconfig):
     index = parse_service_index(graph)
-    assert index is not None, "Invalid graph name, name is {}".format(graph)
+    assert index is not None, f"Invalid graph name, name is {graph}"
     nebula_svc = class_fixture_variables.get("cluster")
     assert nebula_svc is not None, "Cannot get the cluster"
     assert index < len(nebula_svc.graphd_processes)
@@ -414,7 +412,7 @@ def when_login_graphd(graph, user, password, class_fixture_variables, pytestconf
 @when(parse('login "{graph}" with "{user}" and "{password}" should fail:\n{msg}'))
 def when_login_graphd_fail(graph, user, password, class_fixture_variables, msg):
     index = parse_service_index(graph)
-    assert index is not None, "Invalid graph name, name is {}".format(graph)
+    assert index is not None, f"Invalid graph name, name is {graph}"
     nebula_svc = class_fixture_variables.get("cluster")
     assert nebula_svc is not None, "Cannot get the cluster"
     assert index < len(nebula_svc.graphd_processes)
@@ -459,7 +457,7 @@ def executing_query_with_retry(query, exec_ctx, request, secs, retryTimes):
             exec_query(request, ngql, exec_ctx)
             resRetry = exec_ctx["result_set"][0]
             if not resRetry.is_succeeded():
-                retryCounter = retryCounter + 1
+                retryCounter += 1
             else:
                 break
 
@@ -491,11 +489,11 @@ def try_to_execute_query(query, exec_ctx, request):
 def clone_space(exec_ctx, request):
     space_desc = exec_ctx["space_desc"]
     current_space = space_desc._name
-    new_space = "EmptyGraph_" + space_generator()
+    new_space = f"EmptyGraph_{space_generator()}"
     space_desc._name = new_space
     session = exec_ctx.get('current_session')
     resp_ok(session, space_desc.drop_stmt(), True)
-    ngql = "create space " + new_space + " as " + current_space
+    ngql = f"create space {new_space} as {current_space}"
     exec_query(request, ngql, exec_ctx)
     resp_ok(session, space_desc.use_stmt(), True)
     exec_ctx["space_desc"] = space_desc
@@ -602,12 +600,12 @@ def cmp_dataset(
             row = ds.rows[i].values
             printer = DataSetPrinter(rs._decode_type, vid_fn=vid_fn)
             ss = printer.list_to_string(row, delimiter='|')
-            return f'{i}: |' + ss + '|'
+            return f'{i}: |{ss}|'
 
         if rs._data_set_wrapper is None:
             assert (
                 not ds.column_names and not ds.rows
-            ), f"Expected result must be empty table: ||"
+            ), "Expected result must be empty table: ||"
 
         rds = rs._data_set_wrapper._data_set
         res, i = dscmp(rds, ds)
@@ -805,9 +803,9 @@ def raised_type_error(unit, err_type, time, sym, msg, exec_ctx):
     res_msg = res.error_msg()
     if res.error_code() == ErrorCode.E_EXECUTION_ERROR:
         assert err_type == "ExecutionError", f'Error code mismatch, nGQL:{ngql}"'
-        expect_msg = "{}".format(msg)
+        expect_msg = f"{msg}"
     else:
-        expect_msg = "{}: {}".format(err_type, msg)
+        expect_msg = f"{err_type}: {msg}"
     m = res_msg.startswith(expect_msg)
     assert (
         m
@@ -860,7 +858,7 @@ def executing_query(
     session_from_second_conn_pool,
     request,
 ):
-    assert index < 2, "There exists only 0,1 graph: {}".format(index)
+    assert index < 2, f"There exists only 0,1 graph: {index}"
     ngql = combine_query(query)
     if index == 0:
         exec_query(request, ngql, exec_ctx, session_from_first_conn_pool)
@@ -910,10 +908,11 @@ def executing_query_with_params(query, indices, keys, exec_ctx, request):
     assert len(indices_list) == len(
         key_list
     ), f"Length not match for keys and indices: {keys} <=> {indices}"
-    vals = []
     register_lock.acquire()
-    for (key, index) in zip(key_list, indices_list):
-        vals.append(ValueWrapper(register_dict[key][index]))
+    vals = [
+        ValueWrapper(register_dict[key][index])
+        for key, index in zip(key_list, indices_list)
+    ]
     register_lock.release()
     ngql = combine_query(query).format(*vals)
     exec_query(request, ngql, exec_ctx)

@@ -32,13 +32,18 @@ class NebulaProcess(object):
         if params is None:
             params = {}
         if is_standalone == False:
-            assert len(ports) == 4, 'should have 4 ports but have {}'.format(len(ports))
+            assert len(ports) == 4, f'should have 4 ports but have {len(ports)}'
             self.name = name
             self.tcp_port, self.tcp_internal_port, self.http_port, self.https_port = ports
         else:
-            assert len(ports) == 12, 'should have 12 ports but have {}'.format(len(ports))
+            assert len(ports) == 12, f'should have 12 ports but have {len(ports)}'
             self.name = name
-            self.tcp_port, self.tcp_internal_port, self.http_port, self.https_port = ports[0:4]
+            (
+                self.tcp_port,
+                self.tcp_internal_port,
+                self.http_port,
+                self.https_port,
+            ) = ports[:4]
             self.meta_port, self.meta_tcp_internal_port, self.meta_http_port, self.meta_https_port = ports[4:8]
             self.storage_port, self.storage_tcp_internal_port, self.storage_http_port, self.storage_https_port = ports[8:12]
         if name == "listener":
@@ -61,15 +66,15 @@ class NebulaProcess(object):
     def _format_nebula_command(self):
         if self.is_sa == False:
             process_params = {
-                'log_dir': 'logs{}'.format(self.suffix_index),
-                'pid_file': 'pids{}/nebula-{}.pid'.format(self.suffix_index, self.binary_name),
+                'log_dir': f'logs{self.suffix_index}',
+                'pid_file': f'pids{self.suffix_index}/nebula-{self.binary_name}.pid',
                 'port': self.tcp_port,
                 'ws_http_port': self.http_port,
             }
         else:
             process_params = {
-                'log_dir': 'logs{}'.format(self.suffix_index),
-                'pid_file': 'pids{}/nebula-{}.pid'.format(self.suffix_index, self.binary_name),
+                'log_dir': f'logs{self.suffix_index}',
+                'pid_file': f'pids{self.suffix_index}/nebula-{self.binary_name}.pid',
                 'port': self.tcp_port,
                 'ws_http_port': self.http_port,
                 'meta_port': self.meta_port,
@@ -79,26 +84,24 @@ class NebulaProcess(object):
             }
         # data path
         if self.binary_name.upper() != 'GRAPHD':
-            process_params['data_path'] = 'data{}/{}'.format(
-                self.suffix_index, self.binary_name
-            )
+            process_params['data_path'] = f'data{self.suffix_index}/{self.binary_name}'
 
-        process_params.update(self.params)
+        process_params |= self.params
         cmd = [
-            'bin/nebula-{}'.format(self.binary_name),
+            f'bin/nebula-{self.binary_name}',
             '--flagfile',
-            'conf/nebula-{}.conf'.format(self.conf_name),
-        ] + ['--{}={}'.format(key, value) for key, value in process_params.items()]
+            f'conf/nebula-{self.conf_name}.conf',
+        ] + [f'--{key}={value}' for key, value in process_params.items()]
 
         return " ".join(cmd)
 
     def start(self):
         cmd = self._format_nebula_command()
-        print("exec: " + cmd)
+        print(f"exec: {cmd}")
         p = subprocess.Popen([cmd], shell=True, stdout=subprocess.PIPE)
         p.wait()
         if p.returncode != 0:
-            print("error: " + bytes.decode(p.communicate()[0]))
+            print(f"error: {bytes.decode(p.communicate()[0])}")
         self.pid = p.pid
 
     def kill(self, sig):
@@ -107,7 +110,7 @@ class NebulaProcess(object):
         try:
             os.kill(self.pid, sig)
         except OSError as err:
-            print("stop nebula-{} {} failed: {}".format(self.name, self.pid, str(err)))
+            print(f"stop nebula-{self.name} {self.pid} failed: {str(err)}")
 
     def is_alive(self):
         if self.pid is None:
@@ -199,7 +202,7 @@ class NebulaService(object):
             self.graphd_param,
             is_standalone=True
         )
-        index = index + 1
+        index += 1
         listener = NebulaProcess(
             "listener",
             self.all_ports[index: index + self.ports_per_process],
@@ -214,7 +217,7 @@ class NebulaService(object):
         # update meta address
         meta_server_addrs = ','.join(
             [
-                '{}:{}'.format(process.host, process.meta_port)
+                f'{process.host}:{process.meta_port}'
                 for process in self.graphd_processes
             ]
         )
@@ -280,7 +283,7 @@ class NebulaService(object):
         # update meta address
         meta_server_addrs = ','.join(
             [
-                '{}:{}'.format(process.host, process.tcp_port)
+                f'{process.host}:{process.tcp_port}'
                 for process in self.metad_processes
             ]
         )
@@ -382,57 +385,60 @@ class NebulaService(object):
         self.work_dir = work_dir
 
     def _copy_nebula_conf(self):
-        bin_path = self.build_dir + '/bin/'
-        conf_path = self.src_dir + '/conf/'
+        bin_path = f'{self.build_dir}/bin/'
+        conf_path = f'{self.src_dir}/conf/'
 
         for item in ['nebula-graphd', 'nebula-storaged', 'nebula-metad']:
-            shutil.copy(bin_path + item, self.work_dir + '/bin/')
+            shutil.copy(bin_path + item, f'{self.work_dir}/bin/')
             shutil.copy(
-                conf_path + '{}.conf.default'.format(item),
-                self.work_dir + '/conf/{}.conf'.format(item),
+                f'{conf_path}{item}.conf.default',
+                f'{self.work_dir}/conf/{item}.conf',
             )
-        shutil.copy(conf_path+'nebula-storaged-listener.conf.default', self.work_dir+'/conf/nebula-storaged-listener.conf')
+        shutil.copy(
+            f'{conf_path}nebula-storaged-listener.conf.default',
+            f'{self.work_dir}/conf/nebula-storaged-listener.conf',
+        )
 
-        resources_dir = self.work_dir + '/share/resources/'
+        resources_dir = f'{self.work_dir}/share/resources/'
         os.makedirs(resources_dir)
 
         # timezone file
         shutil.copy(
-            self.build_dir + '/../resources/date_time_zonespec.csv', resources_dir
+            f'{self.build_dir}/../resources/date_time_zonespec.csv', resources_dir
         )
-        shutil.copy(self.build_dir + '/../resources/gflags.json', resources_dir)
+        shutil.copy(f'{self.build_dir}/../resources/gflags.json', resources_dir)
         # cert files
-        shutil.copy(self.src_dir + '/tests/cert/test.ca.key', resources_dir)
-        shutil.copy(self.src_dir + '/tests/cert/test.ca.pem', resources_dir)
-        shutil.copy(self.src_dir + '/tests/cert/test.ca.password', resources_dir)
-        shutil.copy(self.src_dir + '/tests/cert/test.derive.key', resources_dir)
-        shutil.copy(self.src_dir + '/tests/cert/test.derive.crt', resources_dir)
+        shutil.copy(f'{self.src_dir}/tests/cert/test.ca.key', resources_dir)
+        shutil.copy(f'{self.src_dir}/tests/cert/test.ca.pem', resources_dir)
+        shutil.copy(f'{self.src_dir}/tests/cert/test.ca.password', resources_dir)
+        shutil.copy(f'{self.src_dir}/tests/cert/test.derive.key', resources_dir)
+        shutil.copy(f'{self.src_dir}/tests/cert/test.derive.crt', resources_dir)
 
     def _copy_standalone_conf(self):
-        bin_path = self.build_dir + '/bin/'
-        conf_path = self.src_dir + '/conf/'
+        bin_path = f'{self.build_dir}/bin/'
+        conf_path = f'{self.src_dir}/conf/'
 
         for item in ['nebula-standalone']:
-            shutil.copy(bin_path + item, self.work_dir + '/bin/')
+            shutil.copy(bin_path + item, f'{self.work_dir}/bin/')
             shutil.copy(
-                conf_path + '{}.conf.default'.format(item),
-                self.work_dir + '/conf/{}.conf'.format(item),
+                f'{conf_path}{item}.conf.default',
+                f'{self.work_dir}/conf/{item}.conf',
             )
 
-        resources_dir = self.work_dir + '/share/resources/'
+        resources_dir = f'{self.work_dir}/share/resources/'
         os.makedirs(resources_dir)
 
         # timezone file
         shutil.copy(
-            self.build_dir + '/../resources/date_time_zonespec.csv', resources_dir
+            f'{self.build_dir}/../resources/date_time_zonespec.csv', resources_dir
         )
-        shutil.copy(self.build_dir + '/../resources/gflags.json', resources_dir)
+        shutil.copy(f'{self.build_dir}/../resources/gflags.json', resources_dir)
         # cert files
-        shutil.copy(self.src_dir + '/tests/cert/test.ca.key', resources_dir)
-        shutil.copy(self.src_dir + '/tests/cert/test.ca.pem', resources_dir)
-        shutil.copy(self.src_dir + '/tests/cert/test.ca.password', resources_dir)
-        shutil.copy(self.src_dir + '/tests/cert/test.derive.key', resources_dir)
-        shutil.copy(self.src_dir + '/tests/cert/test.derive.crt', resources_dir)
+        shutil.copy(f'{self.src_dir}/tests/cert/test.ca.key', resources_dir)
+        shutil.copy(f'{self.src_dir}/tests/cert/test.ca.pem', resources_dir)
+        shutil.copy(f'{self.src_dir}/tests/cert/test.ca.password', resources_dir)
+        shutil.copy(f'{self.src_dir}/tests/cert/test.derive.key', resources_dir)
+        shutil.copy(f'{self.src_dir}/tests/cert/test.derive.crt', resources_dir)
 
     @staticmethod
     def is_port_in_use(port):
@@ -470,8 +476,7 @@ class NebulaService(object):
                             (tcp_port + i) not in all_ports + lock_ports
                             for i in range(0, 2)
                         ):
-                            all_ports.append(tcp_port)
-                            all_ports.append(tcp_port + 1)
+                            all_ports.extend((tcp_port, tcp_port + 1))
                             break
 
                 elif i % self.ports_per_process == 1:
@@ -503,16 +508,16 @@ class NebulaService(object):
         if os.path.exists(self.work_dir):
             shutil.rmtree(self.work_dir)
         os.mkdir(self.work_dir)
-        print("work directory: " + self.work_dir)
+        print(f"work directory: {self.work_dir}")
         os.chdir(self.work_dir)
         installed_files = ['bin', 'conf', 'scripts']
         for f in installed_files:
-            os.mkdir(self.work_dir + '/' + f)
+            os.mkdir(f'{self.work_dir}/{f}')
         self._copy_standalone_conf()
         max_suffix = max([self.graphd_num, self.storaged_num, self.metad_num])
         for i in range(max_suffix):
-            os.mkdir(self.work_dir + '/logs{}'.format(i))
-            os.mkdir(self.work_dir + '/pids{}'.format(i))
+            os.mkdir(f'{self.work_dir}/logs{i}')
+            os.mkdir(f'{self.work_dir}/pids{i}')
 
     def install(self, work_dir=None):
         if work_dir is not None:
@@ -520,32 +525,26 @@ class NebulaService(object):
         if os.path.exists(self.work_dir):
             shutil.rmtree(self.work_dir)
         os.mkdir(self.work_dir)
-        print("work directory: " + self.work_dir)
+        print(f"work directory: {self.work_dir}")
         os.chdir(self.work_dir)
         installed_files = ['bin', 'conf', 'scripts']
         for f in installed_files:
-            os.mkdir(self.work_dir + '/' + f)
+            os.mkdir(f'{self.work_dir}/{f}')
         self._copy_nebula_conf()
         max_suffix = max([self.graphd_num, self.storaged_num, self.metad_num])
         for i in range(max_suffix):
-            os.mkdir(self.work_dir + '/logs{}'.format(i))
-            os.mkdir(self.work_dir + '/pids{}'.format(i))
+            os.mkdir(f'{self.work_dir}/logs{i}')
+            os.mkdir(f'{self.work_dir}/pids{i}')
 
     def _check_servers_status(self, ports):
-        ports_status = {}
-        for port in ports:
-            ports_status[port] = False
-
-        for i in range(0, 20):
-            for port in ports_status:
-                if ports_status[port]:
+        ports_status = {port: False for port in ports}
+        for _ in range(0, 20):
+            for port, value in ports_status.items():
+                if value:
                     continue
                 if self._telnet_port(port):
                     ports_status[port] = True
-            is_ok = True
-            for port in ports_status:
-                if not ports_status[port]:
-                    is_ok = False
+            is_ok = all(ports_status.values())
             if is_ok:
                 return True
             time.sleep(1)
@@ -586,20 +585,20 @@ class NebulaService(object):
 
         hosts = ",".join(
             [
-                "127.0.0.1:{}".format(str(storaged.tcp_port))
+                f"127.0.0.1:{str(storaged.tcp_port)}"
                 for storaged in self.storaged_processes
             ]
         )
-        cmd = "ADD HOSTS {}".format(hosts)
-        print("add hosts cmd is {}".format(cmd))
+        cmd = f"ADD HOSTS {hosts}"
+        print(f"add hosts cmd is {cmd}")
         resp = client.execute(cmd)
         assert resp.is_succeeded(), resp.error_msg()
-        
+
         # sign text search service
         NEBULA_TEST_ES_ADDRESS = os.environ.get("NEBULA_TEST_ES_ADDRESS")
         if NEBULA_TEST_ES_ADDRESS is not None:
             cmd = f"SIGN IN TEXT SERVICE({NEBULA_TEST_ES_ADDRESS});"
-            print("sign text service cmd is {}".format(cmd))
+            print(f"sign text service cmd is {cmd}")
             resp = client.execute(cmd)
             assert resp.is_succeeded(), resp.error_msg()
 
@@ -653,12 +652,12 @@ class NebulaService(object):
 
         hosts = ",".join(
             [
-                "127.0.0.1:{}".format(str(storaged.storage_port))
+                f"127.0.0.1:{str(storaged.storage_port)}"
                 for storaged in self.graphd_processes
             ]
         )
-        cmd = "ADD HOSTS {}".format(hosts)
-        print("add hosts cmd is {}".format(cmd))
+        cmd = f"ADD HOSTS {hosts}"
+        print(f"add hosts cmd is {cmd}")
         resp = client.execute(cmd)
         assert resp.is_succeeded(), resp.error_msg()
         client.release()
@@ -676,7 +675,7 @@ class NebulaService(object):
         return [p.tcp_port for p in self.graphd_processes]
 
     def _collect_pids(self):
-        for pf in glob.glob(self.work_dir + '/pid*/*.pid'):
+        for pf in glob.glob(f'{self.work_dir}/pid*/*.pid'):
             with open(pf) as f:
                 self.pids[f.name] = int(f.readline())
 
@@ -691,7 +690,7 @@ class NebulaService(object):
         max_retries = 20
         while self.is_procs_alive() and max_retries >= 0:
             time.sleep(1)
-            max_retries = max_retries - 1
+            max_retries -= 1
 
         if self.is_procs_alive():
             self.kill_all(signal.SIGKILL)
@@ -721,7 +720,7 @@ class NebulaService(object):
         try:
             os.kill(self.pids[pid], sig)
         except OSError as err:
-            print("stop nebula {} failed: {}".format(pid, str(err)))
+            print(f"stop nebula {pid} failed: {str(err)}")
 
     def is_procs_alive(self):
         return any(self.is_proc_alive(pid) for pid in self.pids)

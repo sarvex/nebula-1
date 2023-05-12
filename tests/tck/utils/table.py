@@ -15,8 +15,7 @@ pattern = re.compile(r"^<\[(\w+)\]>$")
 def _parse_value(cell: str, variables: dict) -> Value:
     if not cell:
         cell = "EMPTY"
-    m = pattern.match(cell)
-    if m:
+    if m := pattern.match(cell):
         var = m.group(1)
         assert var in variables, f"Invalid expect variable usages: {cell}"
         cell = variables.get(var, None)

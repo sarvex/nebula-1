@@ -17,18 +17,20 @@ losts_pattern = re.compile(r'')
 class TestParts(NebulaTestSuite):
 
     @classmethod
-    def prepare(self):
-        resp = self.client.execute('CREATE SPACE space_show_parts(partition_num=1, vid_type=FIXED_STRING(8));'
-                                   'USE space_show_parts;')
-        self.check_resp_succeeded(resp)
+    def prepare(cls):
+        resp = cls.client.execute(
+            'CREATE SPACE space_show_parts(partition_num=1, vid_type=FIXED_STRING(8));'
+            'USE space_show_parts;'
+        )
+        cls.check_resp_succeeded(resp)
 
         # Wait for leader info
-        time.sleep(self.delay)
+        time.sleep(cls.delay)
 
     @classmethod
-    def cleanup(self):
-        resp = self.client.execute('DROP SPACE space_show_parts;')
-        self.check_resp_succeeded(resp)
+    def cleanup(cls):
+        resp = cls.client.execute('DROP SPACE space_show_parts;')
+        cls.check_resp_succeeded(resp)
 
     def test_part(self):
         # All
@@ -37,10 +39,7 @@ class TestParts(NebulaTestSuite):
         expected_col_names = ["Partition ID", "Leader", "Peers", "Losts"]
         self.check_column_names(resp, expected_col_names)
         expected_result = [
-            [re.compile(r'{}'.format(i)),
-             leader_pattern,
-             peers_pattern,
-             losts_pattern]
+            [re.compile(f'{i}'), leader_pattern, peers_pattern, losts_pattern]
             for i in range(1, 2)
         ]
         self.check_result(resp, expected_result, is_regex=True)

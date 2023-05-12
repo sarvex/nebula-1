@@ -7,27 +7,27 @@ from tests.bench.data_generate import generate_insert_student_vertex, generate_i
 
 class TestInsertBench(NebulaTestSuite):
     @classmethod
-    def prepare(self):
-        resp = self.execute(
-            'CREATE SPACE IF NOT EXISTS benchinsertspace(partition_num={partition_num}, replica_factor={replica_factor})'
-            .format(partition_num=self.partition_num,
-                    replica_factor=self.replica_factor))
-        self.check_resp_succeeded(resp)
-        time.sleep(self.graph_delay)
-        resp = self.execute('USE benchinsertspace')
-        self.check_resp_succeeded(resp)
-        resp = self.execute(
-            'CREATE TAG IF NOT EXISTS person(name string, age int)')
-        self.check_resp_succeeded(resp)
+    def prepare(cls):
+        resp = cls.execute(
+            'CREATE SPACE IF NOT EXISTS benchinsertspace(partition_num={partition_num}, replica_factor={replica_factor})'.format(
+                partition_num=cls.partition_num, replica_factor=cls.replica_factor
+            )
+        )
+        cls.check_resp_succeeded(resp)
+        time.sleep(cls.graph_delay)
+        resp = cls.execute('USE benchinsertspace')
+        cls.check_resp_succeeded(resp)
+        resp = cls.execute('CREATE TAG IF NOT EXISTS person(name string, age int)')
+        cls.check_resp_succeeded(resp)
 
-        self.execute('CREATE EDGE IF NOT EXISTS like(likeness int)')
-        self.check_resp_succeeded(resp)
-        time.sleep(self.graph_delay)
+        cls.execute('CREATE EDGE IF NOT EXISTS like(likeness int)')
+        cls.check_resp_succeeded(resp)
+        time.sleep(cls.graph_delay)
 
     @classmethod
-    def cleanup(self):
-        resp = self.execute('drop space benchinsertspace')
-        self.check_resp_succeeded(resp)
+    def cleanup(cls):
+        resp = cls.execute('drop space benchinsertspace')
+        cls.check_resp_succeeded(resp)
 
     def insert_vertex(self, duration=0.000001):
         resp = self.execute('USE benchinsertspace')

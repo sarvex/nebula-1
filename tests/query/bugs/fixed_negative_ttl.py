@@ -10,15 +10,16 @@ from tests.common.nebula_test_suite import NebulaTestSuite
 
 class TestNegativeTTL(NebulaTestSuite):
     @classmethod
-    def prepare(self):
-        resp = self.execute(
-            'CREATE SPACE IF NOT EXISTS NegativeTTL(partition_num={partition_num}, replica_factor={replica_factor})'
-            .format(partition_num=self.partition_num,
-                    replica_factor=self.replica_factor))
-        self.check_resp_succeeded(resp)
-        time.sleep(self.delay)
-        resp = self.execute('USE NegativeTTL')
-        self.check_resp_succeeded(resp)
+    def prepare(cls):
+        resp = cls.execute(
+            'CREATE SPACE IF NOT EXISTS NegativeTTL(partition_num={partition_num}, replica_factor={replica_factor})'.format(
+                partition_num=cls.partition_num, replica_factor=cls.replica_factor
+            )
+        )
+        cls.check_resp_succeeded(resp)
+        time.sleep(cls.delay)
+        resp = cls.execute('USE NegativeTTL')
+        cls.check_resp_succeeded(resp)
 
     def test_NegativeTTL(self):
         time.sleep(self.delay)
@@ -47,6 +48,6 @@ class TestNegativeTTL(NebulaTestSuite):
 
 
     @classmethod
-    def cleanup(self):
-        resp = self.execute('drop space NegativeTTL')
-        self.check_resp_succeeded(resp)
+    def cleanup(cls):
+        resp = cls.execute('drop space NegativeTTL')
+        cls.check_resp_succeeded(resp)

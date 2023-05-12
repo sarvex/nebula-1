@@ -15,12 +15,13 @@ from tests.common.nebula_test_suite import NebulaTestSuite
 
 class TestQueryReversely(NebulaTestSuite):
     @classmethod
-    def prepare(self):
-        resp = self.execute(
-            'CREATE SPACE IF NOT EXISTS queryreversely(partition_num={partition_num}, replica_factor={replica_factor})'
-            .format(partition_num=self.partition_num,
-                    replica_factor=self.replica_factor))
-        self.check_resp_succeeded(resp)
+    def prepare(cls):
+        resp = cls.execute(
+            'CREATE SPACE IF NOT EXISTS queryreversely(partition_num={partition_num}, replica_factor={replica_factor})'.format(
+                partition_num=cls.partition_num, replica_factor=cls.replica_factor
+            )
+        )
+        cls.check_resp_succeeded(resp)
 
     def test_query_reversely(self):
         time.sleep(self.delay)
@@ -73,6 +74,6 @@ class TestQueryReversely(NebulaTestSuite):
         self.check_empty_result(resp.rows)
 
     @classmethod
-    def cleanup(self):
-        resp = self.execute('drop space queryreversely')
-        self.check_resp_succeeded(resp)
+    def cleanup(cls):
+        resp = cls.execute('drop space queryreversely')
+        cls.check_resp_succeeded(resp)

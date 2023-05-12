@@ -45,8 +45,8 @@ T_NULL_UNKNOWN_DIV_BY_ZERO.set_nVal(CommonTtypes.NullType.DIV_BY_ZERO)
 @pytest.mark.usefixtures("workaround_for_class")
 class NebulaTestSuite(object):
     @classmethod
-    def set_delay(self):
-        self.delay = get_delay_time(self.client)
+    def set_delay(cls):
+        cls.delay = get_delay_time(cls.client)
 
     # @classmethod
     # def setup_class(self):
@@ -63,26 +63,28 @@ class NebulaTestSuite(object):
     #     self.prepare()
 
     @classmethod
-    def load_data(self):
-        self.data_loaded = True
+    def load_data(cls):
+        cls.data_loaded = True
         # pathlist = Path(self.data_dir).rglob('*.ngql')
-        pathlist = [Path(self.data_dir).joinpath("data/nba.ngql")]
+        pathlist = [Path(cls.data_dir).joinpath("data/nba.ngql")]
         for path in pathlist:
             print("open: ", path)
             with open(path, 'r') as data_file:
                 space_name = path.name.split('.')[0] + datetime.datetime.now().strftime(
                     '%H_%M_%S_%f'
                 )
-                self.spaces.append(space_name)
-                resp = self.execute(
-                    'CREATE SPACE IF NOT EXISTS {space_name}(partition_num={partition_num}, '
-                    'replica_factor={replica_factor}, vid_type=FIXED_STRING(30)); USE {space_name};'.format(
-                        partition_num=self.partition_num,
-                        replica_factor=self.replica_factor,
-                        space_name=space_name,
+                cls.spaces.append(space_name)
+                resp = cls.execute(
+                    (
+                        'CREATE SPACE IF NOT EXISTS {space_name}(partition_num={partition_num}, '
+                        'replica_factor={replica_factor}, vid_type=FIXED_STRING(30)); USE {space_name};'.format(
+                            partition_num=cls.partition_num,
+                            replica_factor=cls.replica_factor,
+                            space_name=space_name,
+                        )
                     )
                 )
-                self.check_resp_succeeded(resp)
+                cls.check_resp_succeeded(resp)
 
                 lines = data_file.readlines()
                 ddl = False
@@ -97,34 +99,32 @@ class NebulaTestSuite(object):
                             ddl = True
                         elif comment == 'END':
                             if ddl:
-                                time.sleep(self.delay)
+                                time.sleep(cls.delay)
                                 ddl = False
                     else:
                         line = line.rstrip()
-                        ngql_statement += " " + line
+                        ngql_statement += f" {line}"
                         if line.endswith(';'):
-                            resp = self.execute(ngql_statement)
-                            self.check_resp_succeeded(resp)
+                            resp = cls.execute(ngql_statement)
+                            cls.check_resp_succeeded(resp)
                             ngql_statement = ""
 
     @classmethod
-    def drop_data(self):
-        if self.data_loaded:
-            drop_stmt = []
-            for space in self.spaces:
-                drop_stmt.append('DROP SPACE {}'.format(space))
-            resp = self.execute(';'.join(drop_stmt))
-            self.check_resp_succeeded(resp)
+    def drop_data(cls):
+        if cls.data_loaded:
+            drop_stmt = [f'DROP SPACE {space}' for space in cls.spaces]
+            resp = cls.execute(';'.join(drop_stmt))
+            cls.check_resp_succeeded(resp)
 
     @classmethod
-    def use_nba(self):
-        resp = self.execute('USE nba;')
-        self.check_resp_succeeded(resp)
+    def use_nba(cls):
+        resp = cls.execute('USE nba;')
+        cls.check_resp_succeeded(resp)
 
     @classmethod
-    def use_student_space(self):
-        resp = self.execute('USE student;')
-        self.check_resp_succeeded(resp)
+    def use_student_space(cls):
+        resp = cls.execute('USE student;')
+        cls.check_resp_succeeded(resp)
 
     # @classmethod
     # def create_nebula_clients(self):
@@ -139,21 +139,21 @@ class NebulaTestSuite(object):
     #     self.client = self.client_pool.get_session(self.user, self.password)
 
     @classmethod
-    def spawn_nebula_client(self, user, password):
-        return self.client_pool.get_session(user, password)
+    def spawn_nebula_client(cls, user, password):
+        return cls.client_pool.get_session(user, password)
 
     @classmethod
-    def release_nebula_client(self, client):
+    def release_nebula_client(cls, client):
         client.release()
 
     @classmethod
-    def get_connection(self, ip, port):
-        ssl_config = self.client_pool._ssl_configs
+    def get_connection(cls, ip, port):
+        ssl_config = cls.client_pool._ssl_configs
         try:
             conn = Connection()
             conn.open_SSL(ip, port, 0, ssl_config)
         except Exception as ex:
-            assert False, 'Create connection to {}:{} failed, {}'.format(ip, port, ex)
+            assert False, f'Create connection to {ip}:{port} failed, {ex}'
         return conn
 
     # @classmethod
@@ -169,8 +169,8 @@ class NebulaTestSuite(object):
     #     self.close_nebula_clients()
 
     @classmethod
-    def execute(self, ngql, profile=True):
-        return self.client.execute('PROFILE {{{}}}'.format(ngql) if profile else ngql)
+    def execute(cls, ngql, profile=True):
+        return cls.client.execute('PROFILE {{{}}}'.format(ngql) if profile else ngql)
 
     @classmethod
     def check_rows_with_header(cls, stmt: str, expected: dict):
@@ -192,41 +192,33 @@ class NebulaTestSuite(object):
             cls.cleanup()
 
     @classmethod
-    def check_resp_succeeded(self, resp):
+    def check_resp_succeeded(cls, resp):
         assert (
             resp.is_succeeded()
             or resp.error_code() == CommonTtypes.ErrorCode.E_STATEMENT_EMPTY
         ), resp.error_msg()
 
     @classmethod
-    def check_resp_failed(
-        self,
-        resp,
-        error_code: CommonTtypes.ErrorCode = CommonTtypes.ErrorCode.SUCCEEDED,
-    ):
+    def check_resp_failed(cls, resp, error_code: CommonTtypes.ErrorCode = CommonTtypes.ErrorCode.SUCCEEDED):
         if error_code == CommonTtypes.ErrorCode.SUCCEEDED:
-            assert resp.error_code() != error_code, '{} == {}, {}'.format(
-                CommonTtypes.ErrorCode._VALUES_TO_NAMES[resp.error_code()],
-                CommonTtypes.ErrorCode._VALUES_TO_NAMES[error_code],
-                resp.error_msg(),
-            )
+            assert (
+                resp.error_code() != error_code
+            ), f'{CommonTtypes.ErrorCode._VALUES_TO_NAMES[resp.error_code()]} == {CommonTtypes.ErrorCode._VALUES_TO_NAMES[error_code]}, {resp.error_msg()}'
         else:
-            assert resp.error_code() == error_code, '{} != {}, {}'.format(
-                CommonTtypes.ErrorCode._VALUES_TO_NAMES[resp.error_code()],
-                CommonTtypes.ErrorCode._VALUES_TO_NAMES[error_code],
-                resp.error_msg(),
-            )
+            assert (
+                resp.error_code() == error_code
+            ), f'{CommonTtypes.ErrorCode._VALUES_TO_NAMES[resp.error_code()]} != {CommonTtypes.ErrorCode._VALUES_TO_NAMES[error_code]}, {resp.error_msg()}'
 
     @classmethod
-    def search_result(self, resp, expect, is_regex=False):
-        self.search(resp, expect, is_regex)
+    def search_result(cls, resp, expect, is_regex=False):
+        cls.search(resp, expect, is_regex)
 
     @classmethod
-    def search_not_exist(self, resp, expect, is_regex=False):
-        self.search(resp, expect, is_regex, False)
+    def search_not_exist(cls, resp, expect, is_regex=False):
+        cls.search(resp, expect, is_regex, False)
 
     @classmethod
-    def search(self, resp, expect, is_regex=False, exist=True):
+    def search(cls, resp, expect, is_regex=False, exist=True):
         if resp.is_empty() and len(expect) == 0:
             return
 
@@ -238,7 +230,7 @@ class NebulaTestSuite(object):
         new_expect = expect
         if not is_regex:
             # convert expect to thrift value
-            new_expect = self.convert_expect(expect)
+            new_expect = cls.convert_expect(expect)
 
         msg = 'Returned row from nebula could not be found, row: {}, resp: {}'
         for exp in new_expect:
@@ -250,7 +242,7 @@ class NebulaTestSuite(object):
             )
 
     @classmethod
-    def check_column_names(self, resp, expect):
+    def check_column_names(cls, resp, expect):
         column_names = resp.keys()
         assert len(column_names) == len(
             expect
@@ -262,7 +254,7 @@ class NebulaTestSuite(object):
             ), f"different column name, expect: {expect[i]} vs. result: {result}"
 
     @classmethod
-    def convert_expect(self, expect):
+    def convert_expect(cls, expect):
         result = []
         for row in expect:
             assert type(row) is list, f'{str(row)} is not list type'
@@ -272,7 +264,7 @@ class NebulaTestSuite(object):
         return result
 
     @classmethod
-    def check_result(self, resp, expect, ignore_col: Set[int] = set(), is_regex=False):
+    def check_result(cls, resp, expect, ignore_col: Set[int] = set(), is_regex=False):
         if resp.is_empty() and len(expect) == 0:
             return
 
@@ -284,7 +276,7 @@ class NebulaTestSuite(object):
         new_expect = expect
         if not is_regex:
             # convert expect to thrift value
-            new_expect = self.convert_expect(expect)
+            new_expect = cls.convert_expect(expect)
         for row, i in zip(rows, range(0, len(new_expect))):
             columns = (
                 new_expect[i].values
@@ -301,33 +293,31 @@ class NebulaTestSuite(object):
                 expect_to_string = row_to_string(columns)
                 assert compare_value(
                     col, exp_val
-                ), 'The returned row from nebula could not be found, row: {}, expect: {}'.format(
-                    row_to_string(row), expect_to_string
-                )
+                ), f'The returned row from nebula could not be found, row: {row_to_string(row)}, expect: {expect_to_string}'
 
     @classmethod
-    def check_out_of_order_result(self, resp, expect, ignore_col: Set[int] = set()):
+    def check_out_of_order_result(cls, resp, expect, ignore_col: Set[int] = set()):
         if resp.is_empty() and len(expect) == 0:
             return
 
         assert not resp.is_empty()
 
         # convert expect to thrift value
-        new_expect = self.convert_expect(expect)
+        new_expect = cls.convert_expect(expect)
         rows = resp.rows()
         sorted_rows = sorted(rows, key=row_to_string)
         resp._resp.data.rows = sorted_rows
         sorted_expect = sorted(new_expect, key=row_to_string)
         # has convert the expect, so set is_regex to True
-        self.check_result(resp, sorted_expect, ignore_col, True)
+        cls.check_result(resp, sorted_expect, ignore_col, True)
 
     @classmethod
-    def check_empty_result(self, resp):
-        msg = 'the row was not empty {}'.format(resp)
+    def check_empty_result(cls, resp):
+        msg = f'the row was not empty {resp}'
         assert resp.is_empty(), msg
 
     @classmethod
-    def check_path_result_without_prop(self, rows, expect):
+    def check_path_result_without_prop(cls, rows, expect):
         msg = 'len(rows)[%d] != len(expect)[%d]' % (len(rows), len(expect))
         assert len(rows) == len(expect), msg
         for exp in expect:
@@ -342,7 +332,7 @@ class NebulaTestSuite(object):
                 else:
                     assert (
                         len(col) == 3
-                    ), "{} invalid values size in expect result".format(exp.__repr__())
+                    ), f"{exp.__repr__()} invalid values size in expect result"
                     step = CommonTtypes.Step()
                     step.name = bytes(col[0], encoding='utf-8')
                     step.ranking = col[1]
@@ -355,24 +345,22 @@ class NebulaTestSuite(object):
                     path.steps.append(step)
             find = False
             for row in rows:
-                assert len(row.values) == 1, "invalid values size in rows: {}".format(
-                    row
-                )
+                assert len(row.values) == 1, f"invalid values size in rows: {row}"
                 assert (
                     row.values[0].getType() == CommonTtypes.Value.PVAL
-                ), "invalid column path type: {}".format(row.values[0].getType()())
+                ), f"invalid column path type: {row.values[0].getType()()}"
                 if row.values[0].get_pVal() == path:
                     find = True
                     break
-            msg = self.check_format_str.format(row.values[0].get_pVal(), path)
+            msg = cls.check_format_str.format(row.values[0].get_pVal(), path)
             assert find, msg
             rows.remove(row)
         assert len(rows) == 0
 
     @classmethod
-    def check_error_msg(self, resp, expect):
-        self.check_resp_failed(resp)
-        msg = self.check_format_str.format(resp.error_msg(), expect)
+    def check_error_msg(cls, resp, expect):
+        cls.check_resp_failed(resp)
+        msg = cls.check_format_str.format(resp.error_msg(), expect)
         err_msg = resp.error_msg()
         if isinstance(expect, Pattern):
             assert expect.match(err_msg), msg
@@ -394,24 +382,20 @@ class NebulaTestSuite(object):
 
         assert name.lower().startswith(
             expect_node[0].lower()
-        ), "Different plan node: {} vs. {}".format(name, expect_node[0])
+        ), f"Different plan node: {name} vs. {expect_node[0]}"
 
         if len(expect_node) > 2:
             descs = {bytes.decode(pair.value) for pair in plan_node_desc.description}
             assert set(expect_node[2]).issubset(
                 descs
-            ), 'Invalid descriptions, expect: {} vs. resp: {}'.format(
-                '; '.join(map(str, expect_node[2])), '; '.join(map(str, descs))
-            )
+            ), f"Invalid descriptions, expect: {'; '.join(map(str, expect_node[2]))} vs. resp: {'; '.join(map(str, descs))}"
 
         if plan_node_desc.dependencies is None:
             return
 
         assert len(expect_node[1]) == len(
             plan_node_desc.dependencies
-        ), "Different plan node dependencies: {} vs. {}".format(
-            len(plan_node_desc.dependencies), len(expect_node[1])
-        )
+        ), f"Different plan node dependencies: {len(plan_node_desc.dependencies)} vs. {len(expect_node[1])}"
 
         for i in range(len(plan_node_desc.dependencies)):
             line_num = plan_desc.node_index_map[plan_node_desc.dependencies[i]]

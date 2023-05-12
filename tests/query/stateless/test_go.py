@@ -11,8 +11,8 @@ from tests.common.nebula_test_suite import NebulaTestSuite
 
 class TestGoQuery(NebulaTestSuite):
     @classmethod
-    def prepare(self):
-        self.use_student_space()
+    def prepare(cls):
+        cls.use_student_space()
 
     def test_1_step(self):
         # 1 step

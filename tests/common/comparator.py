@@ -73,7 +73,7 @@ class DataSetComparator:
         if self._order and self._contains == CmpType.EQUAL:
             if self._first_n_records > 0:
                 # just compare the first n records
-                resp_rows = resp.rows[0: self._first_n_records]
+                resp_rows = resp.rows[:self._first_n_records]
             else:
                 resp_rows = resp.rows
 
@@ -93,19 +93,19 @@ class DataSetComparator:
         if lhs.getType() == Value.__EMPTY__:
             return rhs.getType() == Value.__EMPTY__
         if lhs.getType() == Value.NVAL:
-            if not rhs.getType() == Value.NVAL:
+            if rhs.getType() != Value.NVAL:
                 return False
             return lhs.get_nVal() == rhs.get_nVal()
         if lhs.getType() == Value.BVAL:
-            if not rhs.getType() == Value.BVAL:
+            if rhs.getType() != Value.BVAL:
                 return False
             return lhs.get_bVal() == rhs.get_bVal()
         if lhs.getType() == Value.IVAL:
-            if not rhs.getType() == Value.IVAL:
+            if rhs.getType() != Value.IVAL:
                 return False
             return lhs.get_iVal() == rhs.get_iVal()
         if lhs.getType() == Value.FVAL:
-            if not rhs.getType() == Value.FVAL:
+            if rhs.getType() != Value.FVAL:
                 return False
             # handle nan & inf
             if math.isnan(lhs.get_fVal()):
@@ -114,7 +114,7 @@ class DataSetComparator:
                 return math.isinf(rhs.get_fVal())
             return math.fabs(lhs.get_fVal() - rhs.get_fVal()) < 1.0e-8
         if lhs.getType() == Value.SVAL:
-            if not rhs.getType() == Value.SVAL:
+            if rhs.getType() != Value.SVAL:
                 return False
             return lhs.get_sVal() == self.bstr(rhs.get_sVal())
         if lhs.getType() == Value.DVAL:
@@ -153,34 +153,34 @@ class DataSetComparator:
                 return ldts == rv if type(rv) == str else self.b(ldts) == rv
             return False
         if lhs.getType() == Value.LVAL:
-            if not rhs.getType() == Value.LVAL:
+            if rhs.getType() != Value.LVAL:
                 return False
             lvals = lhs.get_lVal().values
             rvals = rhs.get_lVal().values
             return self.compare_list(lvals, rvals)
         if lhs.getType() == Value.UVAL:
-            if not rhs.getType() == Value.UVAL:
+            if rhs.getType() != Value.UVAL:
                 return False
             lvals = lhs.get_uVal().values
             rvals = rhs.get_uVal().values
             res, _ = self._compare_list(lvals, rvals, self.compare_value)
             return res
         if lhs.getType() == Value.MVAL:
-            if not rhs.getType() == Value.MVAL:
+            if rhs.getType() != Value.MVAL:
                 return False
             lkvs = lhs.get_mVal().kvs
             rkvs = rhs.get_mVal().kvs
             return self.compare_map(lkvs, rkvs)
         if lhs.getType() == Value.VVAL:
-            if not rhs.getType() == Value.VVAL:
+            if rhs.getType() != Value.VVAL:
                 return False
             return self.compare_node(lhs.get_vVal(), rhs.get_vVal())
         if lhs.getType() == Value.EVAL:
-            if not rhs.getType() == Value.EVAL:
+            if rhs.getType() != Value.EVAL:
                 return False
             return self.compare_edge(lhs.get_eVal(), rhs.get_eVal())
         if lhs.getType() == Value.PVAL:
-            if not rhs.getType() == Value.PVAL:
+            if rhs.getType() != Value.PVAL:
                 return False
             return self.compare_path(lhs.get_pVal(), rhs.get_pVal())
         return False
@@ -221,12 +221,8 @@ class DataSetComparator:
 
     def eid(self, e: Edge, etype: int):
         src, dst = e.src, e.dst
-        if e.type is None:
-            if etype < 0:
-                src, dst = e.dst, e.src
-        else:
-            if etype != e.type:
-                src, dst = e.dst, e.src
+        if e.type is None and etype < 0 or e.type is not None and etype != e.type:
+            src, dst = e.dst, e.src
         if type(src) == str:
             src = self.bstr(src)
         if type(dst) == str:
@@ -235,9 +231,9 @@ class DataSetComparator:
 
     def compare_edge(self, lhs: Edge, rhs: Edge):
         if self._strict:
-            if not lhs.name == self.bstr(rhs.name):
+            if lhs.name != self.bstr(rhs.name):
                 return False
-            if not lhs.ranking == rhs.ranking:
+            if lhs.ranking != rhs.ranking:
                 return False
             rsrc, rdst = self.eid(rhs, lhs.type)
             if not (
@@ -253,12 +249,10 @@ class DataSetComparator:
                         self.compare_vid(lhs.src, rsrc) and self.compare_vid(lhs.dst, rdst)
                 ):
                     return False
-            if rhs.ranking is not None:
-                if lhs.ranking != rhs.ranking:
-                    return False
-            if rhs.name is not None:
-                if lhs.name != self.bstr(rhs.name):
-                    return False
+            if rhs.ranking is not None and lhs.ranking != rhs.ranking:
+                return False
+            if rhs.name is not None and lhs.name != self.bstr(rhs.name):
+                return False
             if rhs.props is None:
                 return True
         return self.compare_map(lhs.props, rhs.props)
@@ -304,9 +298,8 @@ class DataSetComparator:
                 return False
             rtags = rhs.tags
         else:
-            if rhs.vid is not None:
-                if not self.compare_vid(lhs.vid, rhs.vid):
-                    return False
+            if rhs.vid is not None and not self.compare_vid(lhs.vid, rhs.vid):
+                return False
             if rhs.tags is not None and len(lhs.tags) < len(rhs.tags):
                 return False
             rtags = [] if rhs.tags is None else rhs.tags
@@ -316,11 +309,10 @@ class DataSetComparator:
             ]
             if len(ltag) != 1:
                 return False
-            if self._strict:
-                if tag.props is None:
+            if tag.props is None:
+                if self._strict:
                     return False
-            else:
-                if tag.props is None:
+                else:
                     continue
             lprops = ltag[0][1]
             if not self.compare_map(lprops, tag.props):
@@ -328,10 +320,10 @@ class DataSetComparator:
         return True
 
     def _get_map_value_by_key(self, key: bytes, kv: Dict[Union[str, bytes], Value]):
-        for k, v in kv.items():
-            if key == self.bstr(k):
-                return True, v
-        return False, None
+        return next(
+            ((True, v) for k, v in kv.items() if key == self.bstr(k)),
+            (False, None),
+        )
 
     def compare_map(self, lhs: Dict[bytes, Value], rhs: KV):
         if len(lhs) != len(rhs):
@@ -351,7 +343,7 @@ class DataSetComparator:
         return res
 
     def compare_row(self, lhs: Row, rhs: Row):
-        if not len(lhs.values) == len(rhs.values):
+        if len(lhs.values) != len(rhs.values):
             return False
         return all(self.compare_value(l, r) for (l, r) in zip(lhs.values, rhs.values))
 
@@ -362,10 +354,10 @@ class DataSetComparator:
         """
         if len(lhs) != len(rhs):
             return False, -1
-        for i, lr in enumerate(lhs):
-            if not cmp_fn(lr, rhs[i]):
-                return False, i
-        return True, -1
+        return next(
+            ((False, i) for i, lr in enumerate(lhs) if not cmp_fn(lr, rhs[i])),
+            (True, -1),
+        )
 
     def _compare_list(self, lhs, rhs, cmp_fn, contains=False):
         visited = []

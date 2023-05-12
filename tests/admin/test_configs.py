@@ -11,11 +11,11 @@ from tests.common.nebula_test_suite import NebulaTestSuite
 class TestConfigs(NebulaTestSuite):
 
     @classmethod
-    def prepare(self):
+    def prepare(cls):
         pass
 
     @classmethod
-    def cleanup(self):
+    def cleanup(cls):
         pass
 
     def test_configs(self):
@@ -29,17 +29,19 @@ class TestConfigs(NebulaTestSuite):
 
         # set and get config after declaration
         v = 3
-        resp = self.client.execute('UPDATE CONFIGS meta:v={}'.format(3))
+        resp = self.client.execute('UPDATE CONFIGS meta:v=3')
         self.check_resp_failed(resp)
-        resp = self.client.execute('UPDATE CONFIGS graph:v={}'.format(3))
+        resp = self.client.execute('UPDATE CONFIGS graph:v=3')
         self.check_resp_succeeded(resp)
-        resp = self.client.execute('UPDATE CONFIGS storage:v={}'.format(3))
+        resp = self.client.execute('UPDATE CONFIGS storage:v=3')
         self.check_resp_succeeded(resp)
 
         # update flag to an invalid value, expected to fail
-        resp = self.client.execute('UPDATE CONFIGS graph:session_idle_timeout_secs={}'.format(0))
+        resp = self.client.execute('UPDATE CONFIGS graph:session_idle_timeout_secs=0')
         self.check_resp_failed(resp)
-        resp = self.client.execute('UPDATE CONFIGS graph:session_idle_timeout_secs={}'.format(999999))
+        resp = self.client.execute(
+            'UPDATE CONFIGS graph:session_idle_timeout_secs=999999'
+        )
         self.check_resp_failed(resp)
 
         # get
@@ -107,7 +109,7 @@ class TestConfigs(NebulaTestSuite):
                                    max_write_buffer_number="4"}
                                    ''')
         self.check_resp_succeeded(resp)
-        
+
         # get result
         resp = self.client.execute('GET CONFIGS storage:rocksdb_column_family_options')
         self.check_resp_succeeded(resp)
@@ -127,7 +129,7 @@ class TestConfigs(NebulaTestSuite):
     @pytest.mark.skip("The change of minloglevel will influence the whole test.")
     def test_update_configs(self):
         # set and get a config of all module
-        resp = self.client.execute('UPDATE CONFIGS minloglevel={}'.format(2))
+        resp = self.client.execute('UPDATE CONFIGS minloglevel=2')
         self.check_resp_succeeded(resp)
 
         # check result
@@ -138,7 +140,7 @@ class TestConfigs(NebulaTestSuite):
         self.check_out_of_order_result(resp, expected_result)
 
         # update storage
-        resp = self.client.execute('UPDATE CONFIGS storage:minloglevel={}'.format(3))
+        resp = self.client.execute('UPDATE CONFIGS storage:minloglevel=3')
         self.check_resp_succeeded(resp)
 
         # get result

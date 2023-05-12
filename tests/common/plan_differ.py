@@ -59,10 +59,6 @@ class PlanDiffer:
                 return False
             if not self._diff_plan_node(plan_desc, loop_body_idx, rows, column_names):
                 return False
-        elif self._is_same_node(name, "Select"):
-            # TODO(yee): check select node
-            pass
-
         if self.OP_INFO in column_names:
             op = expect_node[column_names.index(self.OP_INFO)]
             # Parse expected operator info jsonStr to dict
@@ -85,9 +81,8 @@ class PlanDiffer:
 
         dep_col_idx = column_names.index(self.DEPENDS)
         exp_deps = expect_node[dep_col_idx]
-        if not len(exp_deps) == len(plan_node_desc.dependencies):
-            self._err_msg = "Different plan node dependencies: {} vs. {}".format(
-                len(plan_node_desc.dependencies), len(exp_deps))
+        if len(exp_deps) != len(plan_node_desc.dependencies):
+            self._err_msg = f"Different plan node dependencies: {len(plan_node_desc.dependencies)} vs. {len(exp_deps)}"
             return False
 
         for i in range(len(plan_node_desc.dependencies)):
@@ -105,8 +100,7 @@ class PlanDiffer:
                 for pair in resp
             }
             if not self._is_subdict_nested(exp, resp_dict):
-                return "Invalid descriptions, expect: {} vs. resp: {}".format(
-                    json.dumps(exp), json.dumps(resp_dict))
+                return f"Invalid descriptions, expect: {json.dumps(exp)} vs. resp: {json.dumps(resp_dict)}"
         return None
 
     def _check_profiling_other_stats(self, exp, resp):
@@ -121,13 +115,15 @@ class PlanDiffer:
             return False
         other_stats = resp.other_stats if resp.other_stats else {}
         for k,v in exp.items():
-            if k == "version":
-                if int(v) != version :
-                    return False
-            elif hasattr(resp, k):
-                if getattr(resp, k) != v:
-                    return False
-            else:
+            if (
+                k == "version"
+                and int(v) != version
+                or k != "version"
+                and hasattr(resp, k)
+                and getattr(resp, k) != v
+            ):
+                return False
+            elif k != "version" and not hasattr(resp, k):
                 if isinstance(k, str):
                     k = k.encode()
                 if k not in other_stats:
@@ -231,8 +227,7 @@ class PlanDiffer:
         if init_key in resp:
             resp_json_str = resp[init_key]
         else:
-            return "Failed to find the expected key: {} in the response: {}".format(
-                init_key, json.dumps(resp))
+            return f"Failed to find the expected key: {init_key} in the response: {json.dumps(resp)}"
 
         # Convert json str to dict
         resp_json_dict = {}
@@ -246,21 +241,19 @@ class PlanDiffer:
                 resp_json_dict = self._extract_dict_from_obj(
                     resp_json_dict[key])
             else:
-                return "Failed to find the expected key: {} in the response: {}".format(
-                    key, json.dumps(resp))
+                return f"Failed to find the expected key: {key} in the response: {json.dumps(resp)}"
         return resp_json_dict
 
     def _extract_dict_from_obj(self, obj) -> dict:
         if isinstance(obj, list):
             merged_dict = {}
             for dict_ in obj:
-                merged_dict.update(dict_)
+                merged_dict |= dict_
             return merged_dict
         elif isinstance(obj, dict):
             return obj
         else:
-            return "Failed to extract dict from unknown object: {} type: {}".format(
-                obj, type(obj))
+            return f"Failed to extract dict from unknown object: {obj} type: {type(obj)}"
 
     def _validate_expect(self, rows, column_names):
         # Check expected plan column
@@ -276,7 +269,7 @@ class PlanDiffer:
         if self.OP_INFO not in column_names:
             self._err_msg = "Plan node operator info column is missing in expected plan"
             return False
-        
+
         id_idx_dict = {}
         # Check node id existence
         for i in range(len(rows)):
@@ -288,10 +281,9 @@ class PlanDiffer:
 
         # Check dependencies
         for i in range(len(rows)):
-            deps = rows[i][2]
-            if deps:
+            if deps := rows[i][2]:
                 for dep in deps:
                     if dep not in id_idx_dict:
-                        self._err_msg = "Failed to find dependencies: {}".format(dep)
+                        self._err_msg = f"Failed to find dependencies: {dep}"
                         return False
         return True

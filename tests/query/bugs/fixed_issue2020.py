@@ -8,14 +8,15 @@ from tests.common.nebula_test_suite import NebulaTestSuite
 
 class TestSimpleQuery(NebulaTestSuite):
     @classmethod
-    def prepare(self):
-        resp = self.execute(
-            'CREATE SPACE IF NOT EXISTS fixed_issue_2020(partition_num={partition_num}, replica_factor={replica_factor})'
-            .format(partition_num=self.partition_num,
-                    replica_factor=self.replica_factor))
-        self.check_resp_succeeded(resp)
-        resp = self.execute('USE fixed_issue_2020')
-        self.check_resp_succeeded(resp)
+    def prepare(cls):
+        resp = cls.execute(
+            'CREATE SPACE IF NOT EXISTS fixed_issue_2020(partition_num={partition_num}, replica_factor={replica_factor})'.format(
+                partition_num=cls.partition_num, replica_factor=cls.replica_factor
+            )
+        )
+        cls.check_resp_succeeded(resp)
+        resp = cls.execute('USE fixed_issue_2020')
+        cls.check_resp_succeeded(resp)
 
     def test_default_value_timestamp(self):
         resp = self.execute('CREATE TAG IF NOT EXISTS person(name string, birthday timestamp DEFAULT "2020-02-02 10:00:00")')
@@ -42,6 +43,6 @@ class TestSimpleQuery(NebulaTestSuite):
         self.check_out_of_order_result(resp.rows, expect_result)
 
     @classmethod
-    def cleanup(self):
-        resp = self.execute('drop space fixed_issue_2020')
-        self.check_resp_succeeded(resp)
+    def cleanup(cls):
+        resp = cls.execute('drop space fixed_issue_2020')
+        cls.check_resp_succeeded(resp)

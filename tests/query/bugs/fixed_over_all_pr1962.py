@@ -10,23 +10,23 @@ from tests.common.nebula_test_suite import NebulaTestSuite
 
 class TestSimpleQuery(NebulaTestSuite):
     @classmethod
-    def prepare(self):
-        resp = self.execute(
-            'CREATE SPACE IF NOT EXISTS fixed_over_all_pr1962(partition_num={partition_num}, replica_factor={replica_factor})'
-            .format(partition_num=self.partition_num,
-                    replica_factor=self.replica_factor))
-        self.check_resp_succeeded(resp)
-        time.sleep(self.delay)
-        resp = self.execute('USE fixed_over_all_pr1962')
-        self.check_resp_succeeded(resp)
-        resp = self.execute(
-            'CREATE TAG IF NOT EXISTS person(name string, age int)')
-        self.check_resp_succeeded(resp)
+    def prepare(cls):
+        resp = cls.execute(
+            'CREATE SPACE IF NOT EXISTS fixed_over_all_pr1962(partition_num={partition_num}, replica_factor={replica_factor})'.format(
+                partition_num=cls.partition_num, replica_factor=cls.replica_factor
+            )
+        )
+        cls.check_resp_succeeded(resp)
+        time.sleep(cls.delay)
+        resp = cls.execute('USE fixed_over_all_pr1962')
+        cls.check_resp_succeeded(resp)
+        resp = cls.execute('CREATE TAG IF NOT EXISTS person(name string, age int)')
+        cls.check_resp_succeeded(resp)
 
-        resp = self.execute('CREATE EDGE IF NOT EXISTS like(likeness string)')
-        self.check_resp_succeeded(resp)
-        resp = self.execute('ALTER EDGE like change (likeness double)')
-        self.check_resp_succeeded(resp)
+        resp = cls.execute('CREATE EDGE IF NOT EXISTS like(likeness string)')
+        cls.check_resp_succeeded(resp)
+        resp = cls.execute('ALTER EDGE like change (likeness double)')
+        cls.check_resp_succeeded(resp)
 
     def test_over_all(self):
         time.sleep(self.delay)
@@ -49,6 +49,6 @@ class TestSimpleQuery(NebulaTestSuite):
         self.check_result(resp.rows, expect_result)
 
     @classmethod
-    def cleanup(self):
-        resp = self.execute('drop space fixed_over_all_pr1962')
-        self.check_resp_succeeded(resp)
+    def cleanup(cls):
+        resp = cls.execute('drop space fixed_over_all_pr1962')
+        cls.check_resp_succeeded(resp)

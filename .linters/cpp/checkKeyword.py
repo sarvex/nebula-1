@@ -123,21 +123,18 @@ reserved_key_words = [
 
 
 def get_unreserved_keyword(file_path):
-    parser_file = open(file_path)
-    flag = 0
-    unreserved_key_words = []
-    for line in parser_file.readlines():
-        if line.strip() == 'unreserved_keyword':
-            flag = 1
-            continue
-        if flag == 1:
-            if line.strip() == ';':
-                break
-            unreserved_key_words.append(
-                re.sub('\\s+[:|]\\s+(\\w+)\\s+.*', '\\1', line).strip())
-            continue
-
-    parser_file.close()
+    with open(file_path) as parser_file:
+        flag = 0
+        unreserved_key_words = []
+        for line in parser_file:
+            if line.strip() == 'unreserved_keyword':
+                flag = 1
+                continue
+            if flag == 1:
+                if line.strip() == ';':
+                    break
+                unreserved_key_words.append(
+                    re.sub('\\s+[:|]\\s+(\\w+)\\s+.*', '\\1', line).strip())
     return unreserved_key_words
 
 
@@ -150,16 +147,18 @@ if __name__ == '__main__':
         keyword = re.sub('.*(KW_\\w+)\s*;.*', '\\1', line.strip())
         keywords.append(keyword)
 
-    if len(keywords) == 0:
+    if not keywords:
         exit(0)
     unreserved_key_words = get_unreserved_keyword(PARSER_FILE_PATH)
     new_key_words = [
         word for word in keywords if word not in reserved_key_words]
-    if len(new_key_words) == 0:
+    if not new_key_words:
         exit(0)
     result = [word for word in new_key_words if word not in unreserved_key_words]
-    if len(result) == 0:
+    if not result:
         exit(0)
-    print('Keywords \"{}\" in src/parser/scanner.lex are not in the unreserved keyword list.'.format(result))
+    print(
+        f'Keywords \"{result}\" in src/parser/scanner.lex are not in the unreserved keyword list.'
+    )
     print('Please add them to the unreserved keyword in the src/parser/parser.yy.')
     exit(1)

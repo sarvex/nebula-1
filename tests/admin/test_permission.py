@@ -12,12 +12,12 @@ from tests.common.nebula_test_suite import NebulaTestSuite
 
 class TestPermission(NebulaTestSuite):
     @classmethod
-    def spawn_nebula_client_and_auth(self, user, password):
+    def spawn_nebula_client_and_auth(cls, user, password):
         try:
-            session = self.spawn_nebula_client(user, password)
+            session = cls.spawn_nebula_client(user, password)
             return True, session
         except Exception as e:
-            print('Get Exception: {}'.format(e))
+            print(f'Get Exception: {e}')
             return False, None
 
     @classmethod
@@ -28,46 +28,46 @@ class TestPermission(NebulaTestSuite):
         time.sleep(cls.delay * 2)
 
     @classmethod
-    def cleanup(self):
+    def cleanup(cls):
         query = 'DROP USER IF EXISTS test'
-        resp = self.execute(query)
-        self.check_resp_succeeded(resp)
+        resp = cls.execute(query)
+        cls.check_resp_succeeded(resp)
 
         query = 'DROP USER IF EXISTS admin'
-        resp = self.execute(query)
-        self.check_resp_succeeded(resp)
+        resp = cls.execute(query)
+        cls.check_resp_succeeded(resp)
 
         query = 'DROP USER IF EXISTS dba'
-        resp = self.execute(query)
-        self.check_resp_succeeded(resp)
+        resp = cls.execute(query)
+        cls.check_resp_succeeded(resp)
 
         query = 'DROP USER IF EXISTS user'
-        resp = self.execute(query)
-        self.check_resp_succeeded(resp)
+        resp = cls.execute(query)
+        cls.check_resp_succeeded(resp)
 
         query = 'DROP USER IF EXISTS guest'
-        resp = self.execute(query)
-        self.check_resp_succeeded(resp)
+        resp = cls.execute(query)
+        cls.check_resp_succeeded(resp)
 
         query = 'DROP SPACE IF EXISTS test_permission_space'
-        resp = self.execute(query)
-        self.check_resp_succeeded(resp)
+        resp = cls.execute(query)
+        cls.check_resp_succeeded(resp)
 
         query = 'DROP SPACE IF EXISTS space1'
-        resp = self.execute(query)
-        self.check_resp_succeeded(resp)
+        resp = cls.execute(query)
+        cls.check_resp_succeeded(resp)
 
         query = 'DROP SPACE IF EXISTS space2'
-        resp = self.execute(query)
-        self.check_resp_succeeded(resp)
+        resp = cls.execute(query)
+        cls.check_resp_succeeded(resp)
 
         query = 'DROP SPACE IF EXISTS space3'
-        resp = self.execute(query)
-        self.check_resp_succeeded(resp)
+        resp = cls.execute(query)
+        cls.check_resp_succeeded(resp)
 
         query = 'DROP SPACE IF EXISTS space4'
-        resp = self.execute(query)
-        self.check_resp_succeeded(resp)
+        resp = cls.execute(query)
+        cls.check_resp_succeeded(resp)
 
     def test_simple(self):
         # incorrect user/password

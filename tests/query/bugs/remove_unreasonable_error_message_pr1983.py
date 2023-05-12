@@ -10,18 +10,18 @@ from tests.common.nebula_test_suite import NebulaTestSuite
 
 class TestPR1983(NebulaTestSuite):
     @classmethod
-    def prepare(self):
-        resp = self.execute(
-            'CREATE SPACE IF NOT EXISTS fixed_pr1983(partition_num={partition_num}, replica_factor={replica_factor})'
-            .format(partition_num=self.partition_num,
-                    replica_factor=self.replica_factor))
-        self.check_resp_succeeded(resp)
-        time.sleep(self.delay)
-        resp = self.execute('USE fixed_pr1983')
-        self.check_resp_succeeded(resp)
-        resp = self.execute(
-            'CREATE TAG IF NOT EXISTS person(name string, age int)')
-        self.check_resp_succeeded(resp)
+    def prepare(cls):
+        resp = cls.execute(
+            'CREATE SPACE IF NOT EXISTS fixed_pr1983(partition_num={partition_num}, replica_factor={replica_factor})'.format(
+                partition_num=cls.partition_num, replica_factor=cls.replica_factor
+            )
+        )
+        cls.check_resp_succeeded(resp)
+        time.sleep(cls.delay)
+        resp = cls.execute('USE fixed_pr1983')
+        cls.check_resp_succeeded(resp)
+        resp = cls.execute('CREATE TAG IF NOT EXISTS person(name string, age int)')
+        cls.check_resp_succeeded(resp)
 
     def test_unreasonable_error_message(self):
         time.sleep(self.delay)
@@ -33,6 +33,6 @@ class TestPR1983(NebulaTestSuite):
         self.check_resp_succeeded(resp)
 
     @classmethod
-    def cleanup(self):
-        resp = self.execute('drop space fixed_pr1983')
-        self.check_resp_succeeded(resp)
+    def cleanup(cls):
+        resp = cls.execute('drop space fixed_pr1983')
+        cls.check_resp_succeeded(resp)

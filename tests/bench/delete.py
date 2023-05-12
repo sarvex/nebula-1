@@ -7,33 +7,32 @@ from tests.bench.data_generate import insert_vertices, insert_edges
 
 class TestDeleteBench(NebulaTestSuite):
     @classmethod
-    def prepare(self):
-        resp = self.execute(
-            'CREATE SPACE IF NOT EXISTS benchdeletespace(partition_num={partition_num}, replica_factor={replica_factor})'
-            .format(partition_num=self.partition_num,
-                    replica_factor=self.replica_factor))
-        self.check_resp_succeeded(resp)
+    def prepare(cls):
+        resp = cls.execute(
+            'CREATE SPACE IF NOT EXISTS benchdeletespace(partition_num={partition_num}, replica_factor={replica_factor})'.format(
+                partition_num=cls.partition_num, replica_factor=cls.replica_factor
+            )
+        )
+        cls.check_resp_succeeded(resp)
         time.sleep(4)
-        resp = self.execute('USE benchdeletespace')
+        resp = cls.execute('USE benchdeletespace')
         time.sleep(4)
-        self.check_resp_succeeded(resp)
-        resp = self.execute(
-            'CREATE TAG IF NOT EXISTS person(name string, age int)')
-        self.check_resp_succeeded(resp)
-        resp = self.execute(
-            'CREATE TAG index IF NOT EXISTS personName on person(name)')
-        self.check_resp_succeeded(resp)
-        resp = self.execute('CREATE TAG index IF NOT EXISTS personAge on person(age)')
-        self.check_resp_succeeded(resp)
+        cls.check_resp_succeeded(resp)
+        resp = cls.execute('CREATE TAG IF NOT EXISTS person(name string, age int)')
+        cls.check_resp_succeeded(resp)
+        resp = cls.execute('CREATE TAG index IF NOT EXISTS personName on person(name)')
+        cls.check_resp_succeeded(resp)
+        resp = cls.execute('CREATE TAG index IF NOT EXISTS personAge on person(age)')
+        cls.check_resp_succeeded(resp)
         time.sleep(4)
-        self.execute('CREATE EDGE IF NOT EXISTS like(likeness int)')
-        self.check_resp_succeeded(resp)
+        cls.execute('CREATE EDGE IF NOT EXISTS like(likeness int)')
+        cls.check_resp_succeeded(resp)
         time.sleep(4)
-        insert_vertices(self, "benchdeletespace", 50, 20000)
-        insert_edges(self, "benchdeletespace", 50, 20000)
+        insert_vertices(cls, "benchdeletespace", 50, 20000)
+        insert_edges(cls, "benchdeletespace", 50, 20000)
 
     @classmethod
-    def cleanup(self):
+    def cleanup(cls):
         pass
         # resp = self.execute('drop space benchdeletespace')
         # self.check_resp_succeeded(resp)
@@ -52,7 +51,7 @@ class TestDeleteBench(NebulaTestSuite):
                             self.check_resp_succeeded(resp)
 
             resp = self.execute('lookup on person where person.age == {0} '.format(i))
-            assert resp.rows is None, "Error Query: {}".format(query)
+            assert resp.rows is None, f"Error Query: {query}"
         return ""
 
     @pytest.mark.benchmark(

@@ -14,7 +14,7 @@ from tests.common.nebula_test_suite import NebulaTestSuite
 
 class TestReservedKeyword(NebulaTestSuite):
     @classmethod
-    def prepare(self):
+    def prepare(cls):
         pass
 
     # some reversed keywords are moved to unreversed keywords, and vice versa in #1922

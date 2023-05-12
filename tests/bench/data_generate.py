@@ -8,7 +8,7 @@ import string
 
 
 def insert_vertices(client, ns, batchCount, batchSize):
-    resp = client.execute('USE ' + ns)
+    resp = client.execute(f'USE {ns}')
     client.check_resp_succeeded(resp)
     for i in range(batchCount):
         query = generate_insert_student_vertex(batchSize, batchSize * i)
@@ -17,7 +17,7 @@ def insert_vertices(client, ns, batchCount, batchSize):
 
 
 def insert_edges(client, ns, batchCount, batchSize):
-    resp = client.execute('USE ' + ns)
+    resp = client.execute(f'USE {ns}')
     client.check_resp_succeeded(resp)
     for i in range(batchCount):
         query = generate_insert_likeness_edge(batchSize, batchSize * i)
@@ -27,12 +27,12 @@ def insert_edges(client, ns, batchCount, batchSize):
 
 def randomString(stringLength):
     letters = string.ascii_lowercase
-    return ''.join(random.choice(letters) for i in range(stringLength))
+    return ''.join(random.choice(letters) for _ in range(stringLength))
 
 
 def random_students(size=100):
     students = []
-    for i in range(size):
+    for _ in range(size):
         name = randomString(10)
         age = random.randint(1, 100)
         students.append((name, age))

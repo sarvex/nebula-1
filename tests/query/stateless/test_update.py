@@ -11,28 +11,33 @@ from tests.common.nebula_test_suite import NebulaTestSuite
 
 class TestUpdate(NebulaTestSuite):
     @classmethod
-    def prepare(self):
-        resp = self.execute(
-            'CREATE SPACE IF NOT EXISTS update_space(partition_num={partition_num}, replica_factor={replica_factor})'
-            .format(partition_num=self.partition_num,
-                    replica_factor=self.replica_factor))
-        self.check_resp_succeeded(resp)
-        time.sleep(self.delay)
-        resp = self.execute('USE update_space')
-        self.check_resp_succeeded(resp)
+    def prepare(cls):
+        resp = cls.execute(
+            'CREATE SPACE IF NOT EXISTS update_space(partition_num={partition_num}, replica_factor={replica_factor})'.format(
+                partition_num=cls.partition_num, replica_factor=cls.replica_factor
+            )
+        )
+        cls.check_resp_succeeded(resp)
+        time.sleep(cls.delay)
+        resp = cls.execute('USE update_space')
+        cls.check_resp_succeeded(resp)
 
-        resp = self.execute(
-            'CREATE TAG IF NOT EXISTS person(name STRING, age INT, start TIMESTAMP DEFAULT 3600)')
-        self.check_resp_succeeded(resp)
+        resp = cls.execute(
+            'CREATE TAG IF NOT EXISTS person(name STRING, age INT, start TIMESTAMP DEFAULT 3600)'
+        )
+        cls.check_resp_succeeded(resp)
 
-        resp = self.execute(
-            'CREATE TAG IF NOT EXISTS student(name STRING  DEFAULT "", grade INT DEFAULT 1)')
-        self.check_resp_succeeded(resp)
+        resp = cls.execute(
+            'CREATE TAG IF NOT EXISTS student(name STRING  DEFAULT "", grade INT DEFAULT 1)'
+        )
+        cls.check_resp_succeeded(resp)
 
-        resp = self.execute('CREATE EDGE IF NOT EXISTS study(start TIMESTAMP, '
-                            'end TIMESTAMP DEFAULT 1577844000, name string DEFAULT "")')
-        self.check_resp_succeeded(resp)
-        time.sleep(self.delay)
+        resp = cls.execute(
+            'CREATE EDGE IF NOT EXISTS study(start TIMESTAMP, '
+            'end TIMESTAMP DEFAULT 1577844000, name string DEFAULT "")'
+        )
+        cls.check_resp_succeeded(resp)
+        time.sleep(cls.delay)
 
     def test_update_vertex(self):
         # insert
@@ -282,6 +287,6 @@ class TestUpdate(NebulaTestSuite):
         self.check_resp_failed(resp)
 
     @classmethod
-    def cleanup(self):
-        resp = self.execute('drop space update_space')
-        self.check_resp_succeeded(resp)
+    def cleanup(cls):
+        resp = cls.execute('drop space update_space')
+        cls.check_resp_succeeded(resp)

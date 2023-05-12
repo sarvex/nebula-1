@@ -15,7 +15,7 @@ from tests.common.nebula_test_suite import NebulaTestSuite
 
 class TestDropSpaceIfExists(NebulaTestSuite):
     @classmethod
-    def prepare(self):
+    def prepare(cls):
         print("Nothing to Prepare")
 
     # issue 1461
@@ -89,5 +89,5 @@ class TestDropSpaceIfExists(NebulaTestSuite):
         self.check_resp_succeeded(resp)
 
     @classmethod
-    def cleanup(self):
+    def cleanup(cls):
         print("Nothing to cleanup")

@@ -25,7 +25,7 @@ class TestSnapshot(NebulaTestSuite):
         snapshot_name = resp.row_values(0)[0].as_string()
 
         # drop snapshot
-        resp = self.client.execute('DROP SNAPSHOT {}'.format(snapshot_name))
+        resp = self.client.execute(f'DROP SNAPSHOT {snapshot_name}')
         self.check_resp_succeeded(resp)
 
         # show snapshots

@@ -145,63 +145,53 @@ def t_sstr(t):
     r'\''
     t.lexer.string = ''
     t.lexer.begin('sstr')
-    pass
 
 
 def t_dstr(t):
     r'"'
     t.lexer.string = ''
     t.lexer.begin('dstr')
-    pass
 
 
 def t_regex(t):
     r'/'
     t.lexer.string = ''
     t.lexer.begin('regex')
-    pass
 
 
 def t_sstr_dstr_escape_newline(t):
     r'\\n'
     t.lexer.string += '\n'
-    pass
 
 
 def t_sstr_dstr_escape_tab(t):
     r'\\t'
     t.lexer.string += '\t'
-    pass
 
 
 def t_sstr_dstr_escape_char(t):
     r'\\.'
     t.lexer.string += t.value[1]
-    pass
 
 
 def t_sstr_any(t):
     r'[^\']'
     t.lexer.string += t.value
-    pass
 
 
 def t_dstr_any(t):
     r'[^"]'
     t.lexer.string += t.value
-    pass
 
 
 def t_regex_escape_char(t):
     r'\\/'
     t.lexer.string += t.value[1]
-    pass
 
 
 def t_regex_any(t):
     r'[^/]'
     t.lexer.string += t.value
-    pass
 
 
 def t_regex_PATTERN(t):
@@ -226,7 +216,7 @@ def t_dstr_STRING(t):
 
 
 def t_ANY_error(t):
-    print("Illegal character '%s'" % t.value[0])
+    print(f"Illegal character '{t.value[0]}'")
     t.lexer.skip(1)
 
 
@@ -255,7 +245,7 @@ def p_expr(p):
              | path
              | function
     '''
-    if isinstance(p[1], Value) or isinstance(p[1], Pattern):
+    if isinstance(p[1], (Value, Pattern)):
         p[0] = p[1]
     elif type(p[1]) in [str, bytes]:
         p[0] = Value(sVal=p[1])
@@ -275,10 +265,7 @@ def p_list(p):
              | '[' ']'
     '''
     l = NList()
-    if len(p) == 4:
-        l.values = p[2]
-    else:
-        l.values = []
+    l.values = p[2] if len(p) == 4 else []
     p[0] = Value(lVal=l)
 
 
@@ -309,10 +296,7 @@ def p_map(p):
             | '{' '}'
     '''
     m = NMap()
-    if len(p) == 4:
-        m.kvs = p[2]
-    else:
-        m.kvs = {}
+    m.kvs = p[2] if len(p) == 4 else {}
     p[0] = Value(mVal=m)
 
 
@@ -475,10 +459,7 @@ def p_edge_props(p):
         edge_props :
                    | map
     '''
-    if len(p) == 1:
-        p[0] = None
-    else:
-        p[0] = p[1].get_mVal().kvs
+    p[0] = None if len(p) == 1 else p[1].get_mVal().kvs
 
 
 def p_path(p):
@@ -513,10 +494,7 @@ def p_step(p):
              | '<' '-' '-' vertex
     '''
     step = Step()
-    if p[1] == '-':
-        step.type = 1
-    else:
-        step.type = -1
+    step.type = 1 if p[1] == '-' else -1
     if len(p) == 5:
         v = p[4].get_vVal()
         e = None
@@ -579,8 +557,7 @@ def parse_row(row):
 
 
 if __name__ == '__main__':
-    expected = {}
-    expected['EMPTY'] = Value()
+    expected = {'EMPTY': Value()}
     expected['NULL'] = Value(nVal=NullType.__NULL__)
     expected['nan'] = Value(fVal=float('nan'))
     expected['inf'] = Value(fVal=float('inf'))
@@ -613,11 +590,8 @@ if __name__ == '__main__':
         Value(iVal=3),
     ]))
     expected['{1,2,3}'] = Value(
-        uVal=NSet(set([
-            Value(iVal=1),
-            Value(iVal=2),
-            Value(iVal=3),
-        ])))
+        uVal=NSet({Value(iVal=1), Value(iVal=2), Value(iVal=3)})
+    )
     expected['{}'] = Value(mVal=NMap({}))
     expected['{k1:1,"k2":true}'] = Value(mVal=NMap({
         'k1': Value(iVal=1),
@@ -700,6 +674,7 @@ if __name__ == '__main__':
     ))
     for item in expected.items():
         v = parse(item[0])
-        assert v is not None, "Failed to parse %s" % item[0]
-        assert v == item[1], \
-            "Parsed value not as expected, str: %s, expected: %s actual: %s" % (item[0], item[1], v)
+        assert v is not None, f"Failed to parse {item[0]}"
+        assert (
+            v == item[1]
+        ), f"Parsed value not as expected, str: {item[0]}, expected: {item[1]} actual: {v}"

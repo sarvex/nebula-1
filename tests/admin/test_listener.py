@@ -19,7 +19,9 @@ class TestListener(NebulaTestSuite):
         self.use_nba()
 
         # Add on same as storage host
-        resp = self.client.execute('ADD LISTENER ELASTICSEARCH {}:{}'.format(storage_ip, storage_port))
+        resp = self.client.execute(
+            f'ADD LISTENER ELASTICSEARCH {storage_ip}:{storage_port}'
+        )
         self.check_resp_failed(resp)
 
         # Add nonexistent host

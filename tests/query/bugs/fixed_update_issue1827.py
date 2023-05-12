@@ -4,12 +4,13 @@ from tests.common.nebula_test_suite import NebulaTestSuite
 
 class TestBugUpdate(NebulaTestSuite):
     @classmethod
-    def prepare(self):
-        resp = self.execute(
-            'CREATE SPACE IF NOT EXISTS issue1827_update(partition_num={partition_num}, replica_factor={replica_factor})'
-            .format(partition_num=self.partition_num,
-                    replica_factor=self.replica_factor))
-        self.check_resp_succeeded(resp)
+    def prepare(cls):
+        resp = cls.execute(
+            'CREATE SPACE IF NOT EXISTS issue1827_update(partition_num={partition_num}, replica_factor={replica_factor})'.format(
+                partition_num=cls.partition_num, replica_factor=cls.replica_factor
+            )
+        )
+        cls.check_resp_succeeded(resp)
 
     def test_bugs_issue1827(self):
         time.sleep(self.delay)
@@ -41,6 +42,6 @@ class TestBugUpdate(NebulaTestSuite):
         self.check_resp_succeeded(resp)
 
     @classmethod
-    def cleanup(self):
-        resp = self.execute('drop space issue1827_update')
-        self.check_resp_succeeded(resp)
+    def cleanup(cls):
+        resp = cls.execute('drop space issue1827_update')
+        cls.check_resp_succeeded(resp)

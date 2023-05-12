@@ -69,8 +69,8 @@ def pytest_addoption(parser):
 
 
 def pytest_bdd_step_error(request, feature, scenario, step, step_func, step_func_args):
-    logging.error("Location: {}:{}".format(feature.filename, step.line_number))
-    logging.error("Step: {}".format(step.name))
+    logging.error(f"Location: {feature.filename}:{step.line_number}")
+    logging.error(f"Step: {step.name}")
     graph_spaces = None
     if graph_spaces is None and step_func_args.get("graph_spaces") is not None:
         graph_spaces = step_func_args.get("graph_spaces")
@@ -79,7 +79,7 @@ def pytest_bdd_step_error(request, feature, scenario, step, step_func, step_func
         graph_spaces = step_func_args.get("exec_ctx")
 
     if graph_spaces is not None and graph_spaces.get("space_desc") is not None:
-        logging.error("Space: {}".format(graph_spaces.get("space_desc")))
+        logging.error(f'Space: {graph_spaces.get("space_desc")}')
 
 
 def pytest_configure(config):
@@ -243,8 +243,7 @@ def workaround_for_class(
     if request.cls is None:
         return
 
-    addr = pytestconfig.getoption("address")
-    if addr:
+    if addr := pytestconfig.getoption("address"):
         ss = addr.split(':')
         request.cls.host = ss[0]
         request.cls.port = ss[1]

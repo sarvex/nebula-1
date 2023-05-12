@@ -9,8 +9,8 @@ from tests.common.nebula_test_suite import NebulaTestSuite
 
 class TestFindPathQuery(NebulaTestSuite):
     @classmethod
-    def prepare(self):
-        self.use_student_space()
+    def prepare(cls):
+        cls.use_student_space()
 
     def test_shortest(self):
         # FIND SHORTEST PATH OVER b'is_schoolmate'

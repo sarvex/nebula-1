@@ -16,11 +16,11 @@ class TestAdmin(NebulaTestSuite):
     '''
 
     @classmethod
-    def prepare(self):
+    def prepare(cls):
         pass
 
     @classmethod
-    def cleanup(self):
+    def cleanup(cls):
         pass
 
     @pytest.mark.skip(reason="The change of minloglevel will influence case in test_configs.py")
@@ -48,11 +48,11 @@ class TestAdmin(NebulaTestSuite):
 
         # Set
         minloglevel = 3
-        resp = self.client.execute('UPDATE CONFIGS meta:minloglevel={}'.format(minloglevel))
+        resp = self.client.execute(f'UPDATE CONFIGS meta:minloglevel={minloglevel}')
         self.check_resp_failed(resp)
-        resp = self.client.execute('UPDATE CONFIGS graph:minloglevel={}'.format(minloglevel))
+        resp = self.client.execute(f'UPDATE CONFIGS graph:minloglevel={minloglevel}')
         self.check_resp_succeeded(resp)
-        resp = self.client.execute('UPDATE CONFIGS storage:minloglevel={}'.format(minloglevel))
+        resp = self.client.execute(f'UPDATE CONFIGS storage:minloglevel={minloglevel}')
         self.check_resp_succeeded(resp)
 
         # get
@@ -68,9 +68,13 @@ class TestAdmin(NebulaTestSuite):
         self.check_result(resp, result)
 
         # rollback
-        resp = self.client.execute('UPDATE CONFIGS graph:minloglevel={}'.format(int(graph_minloglevel)))
-        print('UPDATE CONFIGS graph:minloglevel={}'.format(graph_minloglevel))
+        resp = self.client.execute(
+            f'UPDATE CONFIGS graph:minloglevel={int(graph_minloglevel)}'
+        )
+        print(f'UPDATE CONFIGS graph:minloglevel={graph_minloglevel}')
         self.check_resp_succeeded(resp)
-        resp = self.client.execute('UPDATE CONFIGS storage:minloglevel={}'.format(int(storage_minloglevel)))
+        resp = self.client.execute(
+            f'UPDATE CONFIGS storage:minloglevel={int(storage_minloglevel)}'
+        )
         self.check_resp_succeeded(resp)
         time.sleep(self.delay)

@@ -10,18 +10,18 @@ from tests.common.nebula_test_suite import NebulaTestSuite
 
 class TestSimpleQuery(NebulaTestSuite):
     @classmethod
-    def prepare(self):
-        resp = self.execute(
-            'CREATE SPACE IF NOT EXISTS fixed_delete_vertex_issue1996(partition_num={partition_num}, replica_factor={replica_factor})'
-            .format(partition_num=self.partition_num,
-                    replica_factor=self.replica_factor))
-        self.check_resp_succeeded(resp)
-        time.sleep(self.delay)
-        resp = self.execute('USE fixed_delete_vertex_issue1996')
-        self.check_resp_succeeded(resp)
-        resp = self.execute(
-            'CREATE TAG person(name string, age int)')
-        self.check_resp_succeeded(resp)
+    def prepare(cls):
+        resp = cls.execute(
+            'CREATE SPACE IF NOT EXISTS fixed_delete_vertex_issue1996(partition_num={partition_num}, replica_factor={replica_factor})'.format(
+                partition_num=cls.partition_num, replica_factor=cls.replica_factor
+            )
+        )
+        cls.check_resp_succeeded(resp)
+        time.sleep(cls.delay)
+        resp = cls.execute('USE fixed_delete_vertex_issue1996')
+        cls.check_resp_succeeded(resp)
+        resp = cls.execute('CREATE TAG person(name string, age int)')
+        cls.check_resp_succeeded(resp)
 
     def test_issue1996(self):
         time.sleep(self.delay)
@@ -31,6 +31,6 @@ class TestSimpleQuery(NebulaTestSuite):
         self.check_resp_succeeded(resp)
 
     @classmethod
-    def cleanup(self):
-        resp = self.execute('drop space fixed_delete_vertex_issue1996')
-        self.check_resp_succeeded(resp)
+    def cleanup(cls):
+        resp = cls.execute('drop space fixed_delete_vertex_issue1996')
+        cls.check_resp_succeeded(resp)

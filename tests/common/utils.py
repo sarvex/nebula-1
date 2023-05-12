@@ -51,11 +51,7 @@ def _compare_list(rvalues, evalues):
         return False
 
     for rval in rvalues:
-        found = False
-        for ev in evalues:
-            if compare_value(rval, ev):
-                found = True
-                break
+        found = any(compare_value(rval, ev) for ev in evalues)
         if not found:
             return False
     return True
@@ -81,28 +77,19 @@ def compare_value(real, expect):
         if expect.getType() == CommonTtypes.Value.LVAL:
             evalues = expect.get_lVal().values
             return _compare_list(rvalues, evalues)
-        if type(expect) is list:
-            return _compare_list(rvalues, expect)
-        return False
-
+        return _compare_list(rvalues, expect) if type(expect) is list else False
     if real.getType() == CommonTtypes.Value.UVAL:
         rvalues = real.get_uVal().values
         if expect.getType() == CommonTtypes.Value.UVAL:
             evalues = expect.get_uVal().values
             return _compare_list(rvalues, evalues)
-        if type(expect) is set:
-            return _compare_list(rvalues, expect)
-        return False
-
+        return _compare_list(rvalues, expect) if type(expect) is set else False
     if real.getType() == CommonTtypes.Value.MVAL:
         rvalues = real.get_mVal().kvs
         if expect.getType() == CommonTtypes.Value.MVAL:
             evalues = expect.get_mVal().kvs
             return _compare_map(rvalues, evalues)
-        if type(expect) is dict:
-            return _compare_map(rvalues, expect)
-        return False
-
+        return _compare_map(rvalues, expect) if type(expect) is dict else False
     if real.getType() == CommonTtypes.Value.EVAL:
         if expect.getType() != CommonTtypes.Value.EVAL:
             return False
@@ -314,11 +301,7 @@ def to_value(col):
 def find_in_rows(row, rows):
     for r in rows:
         assert len(r.values) == len(row), f'{len(r.values)}!={len(row)}'
-        found = True
-        for col1, col2 in zip(r.values, row):
-            if not compare_value(col1, col2):
-                found = False
-                break
+        found = all(compare_value(col1, col2) for col1, col2 in zip(r.values, row))
         if found:
             return True
     return False
@@ -412,7 +395,7 @@ def load_csv_data(
         space = config.get('space', None)
         assert space is not None
         if not space_name:
-            space_name = space.get('name', "A" + space_generator())
+            space_name = space.get('name', f"A{space_generator()}")
 
         space_desc = SpaceDesc(
             name=space_name,
@@ -454,21 +437,14 @@ def parse_service_index(name: str):
     name = name.lower()
     pattern = r"(graphd|storaged|metad)\[(\d+)\]"
     m = re.match(pattern, name)
-    if m and len(m.groups()) == 2:
-        return int(m.groups()[1])
-    return None
+    return int(m.groups()[1]) if m and len(m.groups()) == 2 else None
 
 def get_ssl_config(is_graph_ssl: bool, ca_signed: bool):
     if not is_graph_ssl:
         return None
     ssl_config = SSL_config()
 
-    if ca_signed:
-        ssl_config.ca_certs = os.path.join(NEBULA_HOME, 'tests/cert/test.ca.pem')
-        ssl_config.certfile = os.path.join(NEBULA_HOME, 'tests/cert/test.derive.crt')
-        ssl_config.keyfile = os.path.join(NEBULA_HOME, 'tests/cert/test.derive.key')
-    else:
-        ssl_config.ca_certs = os.path.join(NEBULA_HOME, 'tests/cert/test.ca.pem')
-        ssl_config.certfile = os.path.join(NEBULA_HOME, 'tests/cert/test.derive.crt')
-        ssl_config.keyfile = os.path.join(NEBULA_HOME, 'tests/cert/test.derive.key')
+    ssl_config.ca_certs = os.path.join(NEBULA_HOME, 'tests/cert/test.ca.pem')
+    ssl_config.certfile = os.path.join(NEBULA_HOME, 'tests/cert/test.derive.crt')
+    ssl_config.keyfile = os.path.join(NEBULA_HOME, 'tests/cert/test.derive.key')
     return ssl_config
